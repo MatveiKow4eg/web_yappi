@@ -17,14 +17,12 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      await AppApi.admin.auth.login({ email, password }).catch((err) => {
-        throw new Error(err.message || "Ошибка соединения. Попробуйте снова.");
-      });
+      await AppApi.admin.auth.login({ email, password });
 
       router.push("/admin");
       router.refresh();
-    } catch {
-      setError("Ошибка соединения. Попробуйте снова.");
+    } catch (err: any) {
+      setError(err.message || "Ошибка соединения. Попробуйте снова.");
     } finally {
       setLoading(false);
     }
