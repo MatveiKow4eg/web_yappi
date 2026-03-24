@@ -67,7 +67,7 @@ export default async function CategoryMenuPage({ params }: Props) {
             href={`/product/${p.slug}`}
             className="rounded-2xl cursor-pointer block overflow-hidden"
           >
-            <div className="aspect-square relative overflow-hidden">
+            <div className="aspect-square relative">
               <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
               <HideOnErrorImage
                 src={
@@ -76,7 +76,7 @@ export default async function CategoryMenuPage({ params }: Props) {
                   ""
                 }
                 alt={p.name_ru}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-contain"
               />
               {!p.is_available && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
