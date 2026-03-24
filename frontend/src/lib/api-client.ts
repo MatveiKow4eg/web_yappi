@@ -18,8 +18,8 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
   }
 
   const data = await res.json();
-  if (!data.success) {
-    throw new Error(data.error || "Unknown API error");
+  if (data.success === false || data.ok === false || (!data.success && !data.ok)) {
+    throw new Error(data.error || data.message || "Unknown API error");
   }
 
   return data.data;
