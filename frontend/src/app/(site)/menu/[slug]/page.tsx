@@ -65,9 +65,9 @@ export default async function CategoryMenuPage({ params }: Props) {
           <a
             key={p.id}
             href={`/product/${p.slug}`}
-            className="card-hover group cursor-pointer block overflow-hidden"
+            className="card cursor-pointer block overflow-hidden"
           >
-            <div className="aspect-square bg-brand-gray-mid relative overflow-hidden">
+            <div className="aspect-square relative overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
               <HideOnErrorImage
                 src={
@@ -76,7 +76,7 @@ export default async function CategoryMenuPage({ params }: Props) {
                   ""
                 }
                 alt={p.name_ru}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className="absolute inset-0 w-full h-full object-cover"
               />
               {!p.is_available && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
