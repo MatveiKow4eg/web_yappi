@@ -118,6 +118,8 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
   
   const res = await fetch(url, {
     ...options,
+    // Prevent stale static caching in Next.js server components for storefront data.
+    cache: options?.cache ?? "no-store",
     credentials: 'include', // 🍪 Automatically send cookies with every request
     headers: {
       "Content-Type": "application/json",
