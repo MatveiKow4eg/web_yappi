@@ -17,7 +17,7 @@ const ImageRefSchema = z.string().trim().refine(
 );
 
 const ProductSchema = z.object({
-  category_id: z.string().uuid(),
+  category_id: z.string().cuid(),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
   name_ru: z.string().min(1),
   name_en: z.string().optional(),
