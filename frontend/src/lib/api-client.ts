@@ -1,14 +1,17 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // ───── Type Definitions ─────
-export interface Category {
+export interface CategorySummary {
   id: string;
   slug: string;
   name_ru: string;
   name_en: string;
   name_et: string;
   is_active: boolean;
-  products?: Product[];
+}
+
+export interface Category extends CategorySummary {
+  products?: Product[];  // Optional since list() doesn't always include it
 }
 
 export interface Product {
@@ -89,8 +92,10 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
 
 export const AppApi = {
   categories: {
-    list: (includeProducts = false) => 
-      fetchApi<Category[]>(`/api/categories${includeProducts ? "?includeProducts=true" : ""}`),
+    list: (includeProducts?: boolean) => {
+      const url = `/api/categories${includeProducts ? "?includeProducts=true" : ""}`;
+      return fetchApi<Category[]>(url);  // Always returns Category[] (includes products if flag is set)
+    },
     getBySlug: (slug: string) => fetchApi<Category>(`/api/categories/${slug}`),
   },
   products: {

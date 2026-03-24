@@ -48,10 +48,10 @@ export default async function CategoryMenuPage({ params }: Props) {
       </div>
 
       <h1 className="text-3xl font-black text-white mb-2">{category.name_ru}</h1>
-      <p className="text-brand-text-muted mb-8">{category.products.length} позиций</p>
+      <p className="text-brand-text-muted mb-8">{category.products?.length ?? 0} позиций</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {category.products.map((p: any) => (
+        {category.products?.map((p: any) => (
           <a
             key={p.id}
             href={`/product/${p.slug}`}
