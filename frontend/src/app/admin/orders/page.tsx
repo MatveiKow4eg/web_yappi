@@ -1,5 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -33,8 +32,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1"));
   const limit = 25;
 
-  const token = cookies().get("admin_token")?.value;
-  const res = await AppApi.admin.orders.list({ status, page, limit }, token).catch(() => ({ orders: [], total: 0 }));
+  const res = await AppApi.admin.orders.list({ status, page, limit }).catch(() => ({ orders: [], total: 0 }));
   const { orders = [], total = 0 } = res as any;
 
   const totalPages = Math.ceil(total / limit);

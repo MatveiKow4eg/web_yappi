@@ -1,5 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -7,8 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Баннеры — Админка" };
 
 export default async function AdminBannersPage() {
-  const token = cookies().get("admin_token")?.value;
-  const banners = await AppApi.admin.banners.list(token).catch(() => []);
+  const banners = await AppApi.admin.banners.list().catch(() => []);
 
   return (
     <div className="flex min-h-screen">

@@ -1,13 +1,11 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Зоны доставки — Админка" };
 
 export default async function AdminDeliveryZonesPage() {
-  const token = cookies().get("admin_token")?.value;
-  const zones = await AppApi.admin.deliveryZones.list(token).catch(() => []);
+  const zones = await AppApi.admin.deliveryZones.list().catch(() => []);
 
   return (
     <div className="flex min-h-screen">

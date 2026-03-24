@@ -1,5 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -7,8 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Товары — Админка" };
 
 export default async function AdminProductsPage() {
-  const token = cookies().get("admin_token")?.value;
-  const res: any = await AppApi.admin.products.list(token).catch(() => ({ products: [] }));
+  const res: any = await AppApi.admin.products.list().catch(() => ({ products: [] }));
   const products: any[] = res.products || res || []; // Handle both array and object responses where possible
 
   return (

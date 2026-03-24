@@ -1,13 +1,11 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Категории — Админка" };
 
 export default async function AdminCategoriesPage() {
-  const token = cookies().get("admin_token")?.value;
-  const categories = await AppApi.admin.categories.list(token).catch(() => []);
+  const categories = await AppApi.admin.categories.list().catch(() => []);
 
   return (
     <div className="flex min-h-screen">

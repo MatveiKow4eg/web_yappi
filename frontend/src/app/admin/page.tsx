@@ -1,16 +1,13 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
-  const token = cookies().get("admin_token")?.value;
-  
   const statsFallback = { totalOrders: 0, todayOrders: 0, pendingOrders: 0 };
-  const stats = await AppApi.admin.stats(token).catch(() => statsFallback);
+  const stats = await AppApi.admin.stats().catch(() => statsFallback);
   const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
 
-  const res = await AppApi.admin.orders.list({ limit: 10 }, token).catch(() => ({ orders: [] }));
+  const res = await AppApi.admin.orders.list({ limit: 10 }).catch(() => ({ orders: [] }));
   const recentOrders = res.orders || [];
 
   const STATUS_CLASSES: Record<string, string> = {

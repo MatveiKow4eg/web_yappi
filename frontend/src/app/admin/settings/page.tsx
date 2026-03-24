@@ -1,5 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import AdminSettingsForm from "./AdminSettingsForm";
 import type { Metadata } from "next";
@@ -7,8 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Настройки — Админка" };
 
 export default async function AdminSettingsPage() {
-  const token = cookies().get("admin_token")?.value;
-  let settings = await AppApi.admin.settings.get(token).catch(() => null);
+  let settings = await AppApi.admin.settings.get().catch(() => null);
 
   return (
     <div className="flex min-h-screen">

@@ -1,5 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -29,8 +28,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 export default async function AdminOrderDetailPage({ params }: Props) {
-  const token = cookies().get("admin_token")?.value;
-  const order = await AppApi.admin.orders.get(params.id, token).catch(() => null);
+  const order = await AppApi.admin.orders.get(params.id).catch(() => null);
 
   if (!order) notFound();
 

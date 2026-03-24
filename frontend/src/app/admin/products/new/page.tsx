@@ -1,5 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import NewProductForm from "./NewProductForm";
 import type { Metadata } from "next";
@@ -7,8 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Новый товар — Админка" };
 
 export default async function AdminNewProductPage() {
-  const token = cookies().get("admin_token")?.value;
-  const categories = await AppApi.admin.categories.list(token).catch(() => []);
+  const categories = await AppApi.admin.categories.list().catch(() => []);
 
   return (
     <div className="flex min-h-screen">
