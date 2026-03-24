@@ -1,6 +1,4 @@
 import { AppApi } from "@/lib/api-client";
-import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import KitchenOrderActions from "./KitchenOrderActions";
 
@@ -25,9 +23,9 @@ const STATUS_BG: Record<string, string> = {
 };
 
 export default async function KitchenPage() {
-  const token = cookies().get("admin_token")?.value;
-  const res = await AppApi.admin.orders.list({ statuses: "new,confirmed_preparing,ready", limit: 0 }, token).catch(() => ({ orders: [] }));
-  const orders = res.orders || [];
+  const orders = await AppApi.admin.orders
+    .list({ statuses: "new,confirmed_preparing,ready", limit: 0 })
+    .catch(() => []);
 
   return (
     <div className="min-h-screen bg-brand-black p-4">

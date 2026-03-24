@@ -54,10 +54,10 @@ export interface Order {
   type: "delivery" | "pickup";
   status: string;
   payment_method: string;
-  payment_status?: string;
+  payment_status: string;
   customer_name: string;
-  customer_phone?: string;
-  language_code?: string;
+  customer_phone: string;
+  language_code: string;
   address_line?: string;
   apartment?: string;
   entrance?: string;
@@ -67,9 +67,9 @@ export interface Order {
   promo_code?: {
     code: string;
   };
-  subtotal_amount?: number;
-  delivery_fee?: number;
-  discount_amount?: number;
+  subtotal_amount: number;
+  delivery_fee: number;
+  discount_amount: number;
   total_amount: number;
   created_at: string;
   confirmed_at?: string;

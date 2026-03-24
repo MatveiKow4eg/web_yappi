@@ -57,7 +57,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                   { label: "Статус оплаты", value: order.payment_status },
                   { label: "Клиент", value: order.customer_name },
                   { label: "Телефон", value: order.customer_phone },
-                  { label: "Язык", value: order.language_code.toUpperCase() },
+                  { label: "Язык", value: (order.language_code ?? "ru").toUpperCase() },
                   ...(order.address_line ? [
                     { label: "Адрес", value: order.address_line },
                     { label: "Квартира", value: order.apartment ?? "—" },
