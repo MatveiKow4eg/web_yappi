@@ -38,7 +38,7 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Details */}
         <div className="flex flex-col">
-          <p className="text-brand-text-muted text-sm mb-2">{product.category.name_ru}</p>
+          <p className="text-brand-text-muted text-sm mb-2">{product.category?.name_ru ?? "Категория"}</p>
           <h1 className="text-3xl font-black text-white mb-3">{product.name_ru}</h1>
 
           {product.description_ru && (
@@ -56,11 +56,11 @@ export default async function ProductPage({ params }: Props) {
           </div>
 
           {/* Variants - display only (full interactivity can be added later) */}
-          {product.variants.length > 0 && (
+          {(product.variants?.length ?? 0) > 0 && (
             <div className="mb-6">
               <p className="text-sm font-semibold text-white mb-2">Вариант</p>
               <div className="flex flex-wrap gap-2">
-                {product.variants.map((v: any) => (
+                {product.variants?.map((v: any) => (
                   <span
                     key={v.id}
                     className="px-4 py-2 rounded-xl bg-brand-gray-mid border border-white/10 text-sm text-white cursor-pointer hover:border-brand-red transition-colors"
@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: Props) {
           )}
 
           {/* Option groups */}
-          {product.option_links.map(({ option_group: g }: any) => (
+          {(product as any).option_links?.map(({ option_group: g }: any) => (
             <div key={g.id} className="mb-4">
               <p className="text-sm font-semibold text-white mb-2">{g.name_ru}</p>
               <div className="flex flex-wrap gap-2">
