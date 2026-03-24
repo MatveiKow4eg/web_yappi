@@ -206,35 +206,25 @@ export default async function HomePage() {
                     <a
                       key={p.id}
                       href={`/product/${p.slug}`}
-                      className="bg-brand-gray-dark rounded-2xl border border-white/5 overflow-hidden hover:border-brand-red/30 transition-all group block"
+                      className="rounded-2xl cursor-pointer block overflow-hidden"
                     >
-                      <div className="aspect-square bg-brand-gray-mid relative overflow-hidden">
-                        <div className="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform duration-300">
-                          🍱
-                        </div>
+                      <div className="aspect-square relative">
+                        <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
                         <HideOnErrorImage
                           src={resolveProductImageSrc(p.image_url) ?? ""}
                           alt={p.name_ru}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="absolute inset-0 w-full h-full object-contain"
                         />
                         {!p.is_available && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <span className="text-xs font-bold text-white bg-brand-red px-2 py-1 rounded-full">Нет в наличии</span>
-                          </div>
-                        )}
-                        {p.old_price && (
-                          <div className="absolute top-2 left-2 bg-brand-red text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            АКЦИЯ
+                            <span className="text-sm font-semibold text-white bg-brand-red px-3 py-1 rounded-full">Нет в наличии</span>
                           </div>
                         )}
                       </div>
                       <div className="p-3">
-                        <p className="text-white font-semibold text-sm mb-1 line-clamp-2 leading-tight">
+                        <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
                           {p.image_url ? `${p.image_url.replace(/^#\s*/, "").trim()}. ` : ""}{p.name_ru}
                         </p>
-                        {p.description_ru && (
-                          <p className="text-brand-text-muted text-xs mb-2 line-clamp-2">{p.description_ru}</p>
-                        )}
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="text-brand-red font-black">

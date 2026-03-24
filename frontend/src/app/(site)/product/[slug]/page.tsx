@@ -37,7 +37,7 @@ export default async function ProductPage({ params }: Props) {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Image */}
-        <div className="aspect-square rounded-2xl bg-brand-gray-mid overflow-hidden relative">
+        <div className="aspect-square rounded-2xl relative">
           <div className="absolute inset-0 flex items-center justify-center text-8xl">🍱</div>
           <HideOnErrorImage
             src={
@@ -46,14 +46,16 @@ export default async function ProductPage({ params }: Props) {
               ""
             }
             alt={product.name_ru}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
         </div>
 
         {/* Details */}
         <div className="flex flex-col">
           <p className="text-brand-text-muted text-sm mb-2">{product.category?.name_ru ?? "Категория"}</p>
-          <h1 className="text-3xl font-black text-white mb-3">{product.name_ru}</h1>
+          <h1 className="text-3xl font-black text-white mb-3">
+            {product.image_url ? `${product.image_url.replace(/^#\s*/, "").trim()}. ` : ""}{product.name_ru}
+          </h1>
 
           {product.description_ru && (
             <p className="text-brand-text-muted leading-relaxed mb-6">{product.description_ru}</p>
