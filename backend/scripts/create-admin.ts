@@ -20,7 +20,7 @@ async function main() {
     data: {
       email,
       password_hash: hashedPassword,
-      name: "Main Admin",
+      full_name: "Main Admin",
     },
   });
 
