@@ -1,16 +1,76 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+// ───── Type Definitions ─────
+export interface Category {
+  id: string;
+  slug: string;
+  name_ru: string;
+  name_en: string;
+  name_et: string;
+  is_active: boolean;
+  products?: Product[];
+}
+
+export interface Product {
+  id: string;
+  slug: string;
+  name_ru: string;
+  name_en: string;
+  name_et: string;
+  image_url?: string;
+  base_price: number;
+  old_price?: number;
+  variants?: ProductVariant[];
+}
+
+export interface ProductVariant {
+  id: string;
+  name_ru: string;
+  price: number;
+  is_default: boolean;
+}
+
+export interface Banner {
+  id: string;
+  title_ru: string;
+  title_en: string;
+  image_url?: string;
+  link_url?: string;
+}
+
+export interface Order {
+  id: string;
+  order_number: string;
+  tracking_token: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+}
+
+export interface AdminLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AdminAuthResponse {
+  ok: boolean;
+  data: {
+    id: string;
+    email: string;
+    role: "admin" | "kitchen";
+  };
+}
+
 export async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
   
   const res = await fetch(url, {
     ...options,
+    credentials: 'include', // 🍪 Automatically send cookies with every request
     headers: {
       "Content-Type": "application/json",
       ...(options?.headers || {}),
     },
-    // For Vercel, we can add next: { revalidate: 60 } or cache: 'no-store' depending on use case.
-    // For now we use the default or what is passed.
   });
 
   if (!res.ok) {
@@ -18,7 +78,7 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
   }
 
   const data = await res.json();
-  if (data.success === false || data.ok === false || (!data.success && !data.ok)) {
+  if (data.ok === false) { // ✅ Only check 'ok' field (backend always uses it)
     throw new Error(data.error || data.message || "Unknown API error");
   }
 
@@ -30,8 +90,8 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
 export const AppApi = {
   categories: {
     list: (includeProducts = false) => 
-      fetchApi<any[]>(`/api/categories${includeProducts ? "?includeProducts=true" : ""}`),
-    getBySlug: (slug: string) => fetchApi<any>(`/api/categories/${slug}`),
+      fetchApi<Category[]>(`/api/categories${includeProducts ? "?includeProducts=true" : ""}`),
+    getBySlug: (slug: string) => fetchApi<Category>(`/api/categories/${slug}`),
   },
   products: {
     list: (params?: { category?: string; search?: string; limit?: number }) => {
@@ -39,46 +99,46 @@ export const AppApi = {
       if (params?.category) qs.set("category", params.category);
       if (params?.search) qs.set("search", params.search);
       if (params?.limit) qs.set("limit", params.limit.toString());
-      return fetchApi<any[]>(`/api/products?${qs.toString()}`);
+      return fetchApi<Product[]>(`/api/products?${qs.toString()}`);
     },
-    getBySlug: (slug: string) => fetchApi<any>(`/api/products/${slug}`),
+    getBySlug: (slug: string) => fetchApi<Product>(`/api/products/${slug}`),
   },
   banners: {
-    list: () => fetchApi<any[]>("/api/banners"),
+    list: () => fetchApi<Banner[]>("/api/banners"),
   },
   orders: {
-    track: (token: string) => fetchApi<any>(`/api/orders/track/${token}`),
+    track: (token: string) => fetchApi<Order>(`/api/orders/track/${token}`),
   },
   admin: {
     auth: {
-      login: (credentials: any) => fetchApi<any>("/api/admin/auth/login", { method: "POST", body: JSON.stringify(credentials) }),
+      login: (credentials: AdminLoginRequest) => fetchApi<AdminAuthResponse>("/api/admin/auth/login", { method: "POST", body: JSON.stringify(credentials) }),
     },
-    stats: (token?: string) => fetchApi<any>("/api/admin/stats", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+    stats: () => fetchApi<any>("/api/admin/stats"),
     orders: {
-      list: (params: any, token?: string) => {
+      list: (params: Record<string, any> = {}) => {
         const qs = new URLSearchParams();
         Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, String(v)); });
-        return fetchApi<any>(`/api/admin/orders?${qs.toString()}`, { headers: token ? { Cookie: `admin_token=${token}` } : {} });
+        return fetchApi<Order[]>(`/api/admin/orders?${qs.toString()}`);
       },
-      get: (id: string, token?: string) => fetchApi<any>(`/api/admin/orders/${id}`, { headers: token ? { Cookie: `admin_token=${token}` } : {} })
+      get: (id: string) => fetchApi<Order>(`/api/admin/orders/${id}`)
     },
     banners: {
-      list: (token?: string) => fetchApi<any[]>("/api/admin/banners", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+      list: () => fetchApi<Banner[]>("/api/admin/banners"),
     },
     categories: {
-      list: (token?: string) => fetchApi<any[]>("/api/admin/categories", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+      list: () => fetchApi<Category[]>("/api/admin/categories"),
     },
     deliveryZones: {
-      list: (token?: string) => fetchApi<any[]>("/api/admin/delivery-zones", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+      list: () => fetchApi<any[]>("/api/admin/delivery-zones"),
     },
     products: {
-      list: (token?: string) => fetchApi<any[]>("/api/admin/products", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+      list: () => fetchApi<Product[]>("/api/admin/products"),
     },
     settings: {
-      get: (token?: string) => fetchApi<any>("/api/admin/settings", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+      get: () => fetchApi<any>("/api/admin/settings"),
     },
     promoCodes: {
-      list: (token?: string) => fetchApi<any[]>("/api/admin/promo-codes", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
+      list: () => fetchApi<any[]>("/api/admin/promo-codes"),
     }
   }
 };

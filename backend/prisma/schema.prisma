@@ -11,6 +11,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────── ENUMS ──────────────────────────────
+enum OptionGroupType {
+  single
+  multiple
+  quantity
+}
+
+enum DiscountType {
+  percent
+  fixed
+}
+
+enum OrderType {
+  delivery
+  pickup
+}
+
+enum OrderStatus {
+  new
+  confirmed_preparing
+  ready
+  sent
+  completed
+  cancelled
+}
+
+enum PaymentMethod {
+  stripe
+  cash_on_pickup
+  card_on_pickup
+  cash_on_delivery
+  card_on_delivery
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  unpaid
+  failed
+  refunded
+}
+
+enum AdminRole {
+  admin
+  kitchen
+}
+
 // ─────────────────────── CATEGORIES ────────────────────────
 model Category {
   id         String    @id @default(cuid())
@@ -71,14 +118,14 @@ model ProductVariant {
 }
 
 model ProductOptionGroup {
-  id          String  @id @default(cuid())
+  id          String             @id @default(cuid())
   name_ru     String
-  name_en     String  @default("")
-  name_et     String  @default("")
-  type        String  @default("single")
-  is_required Boolean @default(false)
-  sort_order  Int     @default(0)
-  is_active   Boolean @default(true)
+  name_en     String             @default("")
+  name_et     String             @default("")
+  type        OptionGroupType    @default(single)
+  is_required Boolean            @default(false)
+  sort_order  Int                @default(0)
+  is_active   Boolean            @default(true)
 
   items        ProductOptionItem[]
   product_links ProductOptionGroupLink[]
@@ -111,20 +158,20 @@ model ProductOptionGroupLink {
 
 // ─────────────────────── PROMO CODES ────────────────────────
 model PromoCode {
-  id                   String   @id @default(cuid())
-  code                 String   @unique
+  id                   String       @id @default(cuid())
+  code                 String       @unique
   description          String?
-  discount_type        String
-  discount_value       Decimal  @db.Decimal(10, 2)
-  min_order_amount     Decimal? @db.Decimal(10, 2)
-  max_discount_amount  Decimal? @db.Decimal(10, 2)
+  discount_type        DiscountType
+  discount_value       Decimal      @db.Decimal(10, 2)
+  min_order_amount     Decimal?     @db.Decimal(10, 2)
+  max_discount_amount  Decimal?     @db.Decimal(10, 2)
   usage_limit_total    Int?
   usage_limit_per_phone Int?
   valid_from           DateTime?
   valid_to             DateTime?
-  is_active            Boolean  @default(true)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  is_active            Boolean      @default(true)
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
 
   usages PromoCodeUsage[]
   orders Order[]
@@ -193,13 +240,13 @@ model RestaurantSettings {
 
 // ─────────────────────── ORDERS ─────────────────────────────
 model Order {
-  id               String    @id @default(cuid())
-  order_number     String    @unique
-  tracking_token   String    @unique @default(cuid())
-  type             String
-  status           String    @default("new")
-  payment_method   String
-  payment_status   String    @default("pending")
+  id               String          @id @default(cuid())
+  order_number     String          @unique
+  tracking_token   String          @unique @default(cuid())
+  type             OrderType
+  status           OrderStatus     @default(new)
+  payment_method   PaymentMethod
+  payment_status   PaymentStatus   @default(pending)
   customer_name    String
   customer_phone   String
   address_line     String?
@@ -208,17 +255,17 @@ model Order {
   floor            String?
   door_code        String?
   comment          String?
-  subtotal_amount  Decimal   @db.Decimal(10, 2)
-  delivery_fee     Decimal   @db.Decimal(10, 2) @default(0)
-  discount_amount  Decimal   @db.Decimal(10, 2) @default(0)
-  total_amount     Decimal   @db.Decimal(10, 2)
-  currency         String    @default("EUR")
-  language_code    String    @default("ru")
+  subtotal_amount  Decimal         @db.Decimal(10, 2)
+  delivery_fee     Decimal         @db.Decimal(10, 2) @default(0)
+  discount_amount  Decimal         @db.Decimal(10, 2) @default(0)
+  total_amount     Decimal         @db.Decimal(10, 2)
+  currency         String          @default("EUR")
+  language_code    String          @default("ru")
   promo_code_id    String?
   delivery_zone_id String?
   cancel_reason    String?
-  created_at       DateTime  @default(now())
-  updated_at       DateTime  @updatedAt
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
   confirmed_at     DateTime?
   ready_at         DateTime?
   sent_at          DateTime?
@@ -266,7 +313,7 @@ model AdminUser {
   email         String    @unique
   password_hash String
   full_name     String?
-  role          String    @default("admin")
+  role          AdminRole @default(admin)
   is_active     Boolean   @default(true)
   last_login_at DateTime?
   created_at    DateTime  @default(now())

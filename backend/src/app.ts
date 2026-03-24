@@ -27,14 +27,14 @@ const start = async () => {
   const allowedOrigins = rawOrigins.split(",").map((o) => o.trim());
 
   await app.register(fastifyCors, {
-    origin: true,
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
   // ─── COOKIES ────────────────────────────────────────────────
   await app.register(fastifyCookie, {
-    secret: process.env.JWT_SECRET ?? "fallback-secret",
+    secret: process.env.JWT_SECRET,
   });
 
   // ─── HEALTH CHECK ───────────────────────────────────────────
