@@ -1,0 +1,348 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────── CATEGORIES ────────────────────────
+model Category {
+  id         String    @id @default(cuid())
+  slug       String    @unique
+  name_ru    String
+  name_en    String
+  name_et    String
+  sort_order Int       @default(0)
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  products   Product[]
+}
+
+// ─────────────────────── PRODUCTS ───────────────────────────
+model Product {
+  id             String               @id @default(cuid())
+  category_id    String
+  category       Category             @relation(fields: [category_id], references: [id])
+  slug           String               @unique
+  name_ru        String
+  name_en        String
+  name_et        String
+  description_ru String?
+  description_en String?
+  description_et String?
+  image_url      String?
+  base_price     Decimal              @db.Decimal(10, 2)
+  old_price      Decimal?             @db.Decimal(10, 2)
+  is_active      Boolean              @default(true)
+  is_hidden      Boolean              @default(false)
+  is_available   Boolean              @default(true)
+  is_combo       Boolean              @default(false)
+  sku            String?
+  sort_order     Int                  @default(0)
+  created_at     DateTime             @default(now())
+  updated_at     DateTime             @updatedAt
+  variants       ProductVariant[]
+  option_links   ProductOptionGroupLink[]
+  order_items    OrderItem[]
+}
+
+// ─────────────────────── PRODUCT VARIANTS ───────────────────
+model ProductVariant {
+  id         String      @id @default(cuid())
+  product_id String
+  product    Product     @relation(fields: [product_id], references: [id])
+  name_ru    String
+  name_en    String
+  name_et    String
+  price      Decimal     @db.Decimal(10, 2)
+  is_default Boolean     @default(false)
+  is_active  Boolean     @default(true)
+  sort_order Int         @default(0)
+  order_items OrderItem[]
+}
+
+// ─────────────────────── OPTION GROUPS ──────────────────────
+model ProductOptionGroup {
+  id          String                   @id @default(cuid())
+  name_ru     String
+  name_en     String
+  name_et     String
+  type        OptionGroupType          @default(single)
+  is_required Boolean                  @default(false)
+  sort_order  Int                      @default(0)
+  is_active   Boolean                  @default(true)
+  items       ProductOptionItem[]
+  links       ProductOptionGroupLink[]
+}
+
+enum OptionGroupType {
+  single
+  multiple
+  quantity
+}
+
+model ProductOptionItem {
+  id          String             @id @default(cuid())
+  group_id    String
+  group       ProductOptionGroup @relation(fields: [group_id], references: [id])
+  name_ru     String
+  name_en     String
+  name_et     String
+  price_delta Decimal            @default(0) @db.Decimal(10, 2)
+  sort_order  Int                @default(0)
+  is_active   Boolean            @default(true)
+}
+
+model ProductOptionGroupLink {
+  id              String             @id @default(cuid())
+  product_id      String
+  product         Product            @relation(fields: [product_id], references: [id])
+  option_group_id String
+  option_group    ProductOptionGroup @relation(fields: [option_group_id], references: [id])
+
+  @@unique([product_id, option_group_id])
+}
+
+// ─────────────────────── PROMO CODES ────────────────────────
+model PromoCode {
+  id                    String            @id @default(cuid())
+  code                  String            @unique
+  description           String?
+  discount_type         DiscountType
+  discount_value        Decimal           @db.Decimal(10, 2)
+  min_order_amount      Decimal?          @db.Decimal(10, 2)
+  max_discount_amount   Decimal?          @db.Decimal(10, 2)
+  usage_limit_total     Int?
+  usage_limit_per_phone Int?
+  valid_from            DateTime?
+  valid_to              DateTime?
+  is_active             Boolean           @default(true)
+  created_at            DateTime          @default(now())
+  updated_at            DateTime          @updatedAt
+  usages                PromoCodeUsage[]
+  orders                Order[]
+}
+
+enum DiscountType {
+  percent
+  fixed
+}
+
+model PromoCodeUsage {
+  id              String    @id @default(cuid())
+  promo_code_id   String
+  promo_code      PromoCode @relation(fields: [promo_code_id], references: [id])
+  order_id        String
+  order           Order     @relation(fields: [order_id], references: [id])
+  phone           String
+  discount_amount Decimal   @db.Decimal(10, 2)
+  used_at         DateTime  @default(now())
+}
+
+// ─────────────────────── BANNERS ────────────────────────────
+model Banner {
+  id          String    @id @default(cuid())
+  title_ru    String
+  title_en    String
+  title_et    String
+  subtitle_ru String?
+  subtitle_en String?
+  subtitle_et String?
+  image_url   String
+  link_url    String?
+  is_active   Boolean   @default(true)
+  sort_order  Int       @default(0)
+  starts_at   DateTime?
+  ends_at     DateTime?
+}
+
+// ─────────────────────── DELIVERY ZONES ─────────────────────
+model DeliveryZone {
+  id                  String   @id @default(cuid())
+  name                String
+  delivery_fee        Decimal  @db.Decimal(10, 2)
+  min_order_amount    Decimal  @db.Decimal(10, 2)
+  free_delivery_from  Decimal? @db.Decimal(10, 2)
+  is_active           Boolean  @default(true)
+  orders              Order[]
+}
+
+// ─────────────────────── RESTAURANT SETTINGS ────────────────
+model RestaurantSettings {
+  id                       String   @id @default(cuid())
+  restaurant_name          String   @default("Yappi Sushi")
+  phone                    String?
+  email                    String?
+  address_ru               String?
+  address_en               String?
+  address_et               String?
+  pickup_enabled           Boolean  @default(true)
+  delivery_enabled         Boolean  @default(true)
+  stripe_enabled           Boolean  @default(false)
+  cash_on_pickup_enabled   Boolean  @default(true)
+  card_on_pickup_enabled   Boolean  @default(true)
+  min_delivery_time_minutes Int     @default(30)
+  max_delivery_time_minutes Int     @default(60)
+  working_hours_json       Json?
+  social_links_json        Json?
+  updated_at               DateTime @updatedAt
+}
+
+// ─────────────────────── CUSTOMERS ──────────────────────────
+model Customer {
+  id            String   @id @default(cuid())
+  name          String?
+  phone         String   @unique
+  last_order_at DateTime?
+  notes         String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  orders        Order[]
+}
+
+// ─────────────────────── ORDERS ─────────────────────────────
+model Order {
+  id                  String         @id @default(cuid())
+  order_number        String         @unique
+  public_status_token String         @unique
+  type                OrderType
+  status              OrderStatus    @default(new)
+  payment_method      PaymentMethod
+  payment_status      PaymentStatus  @default(pending)
+  customer_name       String
+  customer_phone      String
+  customer_id         String?
+  customer            Customer?      @relation(fields: [customer_id], references: [id])
+  address_line        String?
+  apartment           String?
+  entrance            String?
+  floor               String?
+  door_code           String?
+  comment             String?
+  subtotal_amount     Decimal        @db.Decimal(10, 2)
+  delivery_fee        Decimal        @default(0) @db.Decimal(10, 2)
+  discount_amount     Decimal        @default(0) @db.Decimal(10, 2)
+  total_amount        Decimal        @db.Decimal(10, 2)
+  currency            String         @default("EUR")
+  promo_code_id       String?
+  promo_code          PromoCode?     @relation(fields: [promo_code_id], references: [id])
+  delivery_zone_id    String?
+  delivery_zone       DeliveryZone?  @relation(fields: [delivery_zone_id], references: [id])
+  language_code       String         @default("ru")
+  stripe_payment_intent_id String?
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  confirmed_at        DateTime?
+  ready_at            DateTime?
+  sent_at             DateTime?
+  completed_at        DateTime?
+  cancelled_at        DateTime?
+  cancel_reason       String?
+  items               OrderItem[]
+  promo_usages        PromoCodeUsage[]
+}
+
+enum OrderType {
+  delivery
+  pickup
+}
+
+enum OrderStatus {
+  new
+  confirmed_preparing
+  ready
+  sent
+  completed
+  cancelled
+}
+
+enum PaymentMethod {
+  stripe
+  cash_on_pickup
+  card_on_pickup
+  cash_on_delivery
+  card_on_delivery
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  unpaid
+  failed
+  refunded
+}
+
+// ─────────────────────── ORDER ITEMS ────────────────────────
+model OrderItem {
+  id                      String               @id @default(cuid())
+  order_id                String
+  order                   Order                @relation(fields: [order_id], references: [id])
+  product_id              String
+  product                 Product              @relation(fields: [product_id], references: [id])
+  product_variant_id      String?
+  product_variant         ProductVariant?      @relation(fields: [product_variant_id], references: [id])
+  product_name_snapshot   String
+  variant_name_snapshot   String?
+  unit_price              Decimal              @db.Decimal(10, 2)
+  quantity                Int
+  line_total              Decimal              @db.Decimal(10, 2)
+  selections              OrderItemSelection[]
+}
+
+model OrderItemSelection {
+  id                          String    @id @default(cuid())
+  order_item_id               String
+  order_item                  OrderItem @relation(fields: [order_item_id], references: [id])
+  option_group_name_snapshot  String
+  option_item_name_snapshot   String
+  price_delta                 Decimal   @db.Decimal(10, 2)
+  quantity                    Int       @default(1)
+}
+
+// ─────────────────────── ADMIN USERS ────────────────────────
+model AdminUser {
+  id            String           @id @default(cuid())
+  email         String           @unique
+  password_hash String
+  full_name     String
+  role          AdminRole        @default(kitchen)
+  is_active     Boolean          @default(true)
+  last_login_at DateTime?
+  created_at    DateTime         @default(now())
+  updated_at    DateTime         @updatedAt
+  action_logs   AdminActionLog[]
+}
+
+enum AdminRole {
+  admin
+  kitchen
+}
+
+// ─────────────────────── ADMIN LOGS ─────────────────────────
+model AdminActionLog {
+  id            String    @id @default(cuid())
+  admin_user_id String
+  admin_user    AdminUser @relation(fields: [admin_user_id], references: [id])
+  action        String
+  entity_type   String
+  entity_id     String?
+  payload_json  Json?
+  created_at    DateTime  @default(now())
+}
+
+// ─────────────────────── PUSH TOKENS ────────────────────────
+model PushToken {
+  id               String   @id @default(cuid())
+  phone_or_user_key String
+  platform         String
+  push_token       String
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}

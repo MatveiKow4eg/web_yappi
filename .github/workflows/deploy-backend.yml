@@ -1,0 +1,48 @@
+name: Deploy Backend to Vultr
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vultr VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VULTR_BACKEND_HOST }}
+          username: ${{ secrets.VULTR_BACKEND_USER }}
+          key: ${{ secrets.VULTR_SSH_PRIVATE_KEY }}
+          script: |
+            # Переходим в папку проекта на сервере (замени путь, если нужно)
+            cd /var/www/yappi-sushi
+            
+            # Забираем последние изменения
+            git pull origin main
+            
+            # Переходим в директорию бэкенда
+            cd backend
+            
+            # Устанавливаем зависимости
+            npm install
+            
+            # Генерируем клиент Prisma
+            npx prisma generate
+            
+            # Применяем миграции к базе данных Vultr (ОБЯЗАТЕЛЬНО DATABASE_URL в .env сервера)
+            npx prisma migrate deploy
+            
+            # Собираем TypeScript (если используешь tsc)
+            npm run build
+            
+            # Перезапускаем PM2 или просто node (предполагаем PM2)
+            pm2 restart yappi-backend || pm2 start dist/server.js --name "yappi-backend"
