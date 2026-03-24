@@ -44,7 +44,7 @@ export function getLocalized(
  * Supports:
  * - Full URL: https://...
  * - Absolute app path: /images/...
- * - Code format: "# nnn" -> /images/sushi/%23%20nnn.jpg
+ * - Code format: "# nnn" or "nnn" -> /images/sushi/nnn.png
  */
 export function resolveProductImageSrc(imageRef?: string | null): string | undefined {
   const value = (imageRef ?? "").trim();
@@ -58,8 +58,9 @@ export function resolveProductImageSrc(imageRef?: string | null): string | undef
     return value;
   }
 
-  if (value.startsWith("#")) {
-    return `/images/sushi/${encodeURIComponent(value)}.jpg`;
+  const numericCode = value.replace(/^#/, "").trim();
+  if (/^\d+$/.test(numericCode)) {
+    return `/images/sushi/${numericCode}.png`;
   }
 
   return undefined;
