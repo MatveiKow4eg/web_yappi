@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const categories = await AppApi.categories.list(true).catch((e) => {
-    console.error("Failed to fetch categories from API", e);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Failed to fetch categories from API", e);
+    }
     return [];
   });
 

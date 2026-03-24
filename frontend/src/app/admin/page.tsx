@@ -7,7 +7,10 @@ export default async function AdminDashboard() {
   const stats = await AppApi.admin.stats().catch(() => statsFallback);
   const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
 
-  const recentOrders = await AppApi.admin.orders.list({ limit: 10 }).catch(() => []);
+  const recentOrders = await AppApi.admin.orders
+    .list({ limit: 10 })
+    .then((res) => res.orders)
+    .catch(() => []);
 
   const STATUS_CLASSES: Record<string, string> = {
     new: "badge-gray",

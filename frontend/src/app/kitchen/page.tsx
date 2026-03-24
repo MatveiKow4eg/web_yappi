@@ -25,6 +25,7 @@ const STATUS_BG: Record<string, string> = {
 export default async function KitchenPage() {
   const orders = await AppApi.admin.orders
     .list({ statuses: "new,confirmed_preparing,ready", limit: 0 })
+    .then((res) => res.orders)
     .catch(() => []);
 
   return (

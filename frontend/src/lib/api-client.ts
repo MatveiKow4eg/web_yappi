@@ -92,6 +92,13 @@ export interface Order {
   }>;
 }
 
+export interface AdminOrdersListResponse {
+  orders: Order[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface AdminLoginRequest {
   email: string;
   password: string;
@@ -165,7 +172,7 @@ export const AppApi = {
       list: (params: Record<string, any> = {}) => {
         const qs = new URLSearchParams();
         Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, String(v)); });
-        return fetchApi<Order[]>(`/api/admin/orders?${qs.toString()}`);
+        return fetchApi<AdminOrdersListResponse>(`/api/admin/orders?${qs.toString()}`);
       },
       get: (id: string) => fetchApi<Order>(`/api/admin/orders/${id}`)
     },

@@ -32,7 +32,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1"));
   const limit = 25;
 
-  const res = await AppApi.admin.orders.list({ status, page, limit }).catch(() => ({ orders: [], total: 0 }));
+  const res = await AppApi.admin.orders
+    .list({ status, page, limit })
+    .catch(() => ({ orders: [], total: 0, page: 1, limit }));
   const { orders = [], total = 0 } = res as any;
 
   const totalPages = Math.ceil(total / limit);
