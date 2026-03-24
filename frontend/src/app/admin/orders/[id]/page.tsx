@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -28,14 +29,8 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 export default async function AdminOrderDetailPage({ params }: Props) {
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
-    include: {
-      items: { include: { selections: true } },
-      promo_code: { select: { code: true } },
-      delivery_zone: true,
-    },
-  });
+  const token = cookies().get("admin_token")?.value;
+  const order = await AppApi.admin.orders.get(params.id, token).catch(() => null);
 
   if (!order) notFound();
 
@@ -87,14 +82,14 @@ export default async function AdminOrderDetailPage({ params }: Props) {
             <div className="card p-6">
               <h2 className="font-bold text-white mb-4">Состав заказа</h2>
               <div className="space-y-4">
-                {order.items.map((item) => (
+                {order.items.map((item: any) => (
                   <div key={item.id} className="flex justify-between text-sm border-b border-white/5 pb-3 last:border-0 last:pb-0">
                     <div>
                       <p className="text-white font-medium">{item.product_name_snapshot}</p>
                       {item.variant_name_snapshot && (
                         <p className="text-brand-text-muted text-xs">{item.variant_name_snapshot}</p>
                       )}
-                      {item.selections.map((s) => (
+                      {item.selections.map((s: any) => (
                         <p key={s.id} className="text-brand-text-muted text-xs">
                           {s.option_group_name_snapshot}: {s.option_item_name_snapshot}
                           {parseFloat(s.price_delta.toString()) > 0 && (

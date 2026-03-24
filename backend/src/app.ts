@@ -15,6 +15,9 @@ import adminOrdersRoutes from "./routes/admin/orders";
 import adminProductsRoutes from "./routes/admin/products";
 import adminCategoriesRoutes from "./routes/admin/categories";
 import adminSettingsRoutes from "./routes/admin/settings";
+import adminBannersRoutes from "./routes/admin/banners";
+import adminDeliveryZonesRoutes from "./routes/admin/delivery_zones";
+import adminPromoCodesRoutes from "./routes/admin/promo_codes";
 
 const app = Fastify({ logger: true });
 
@@ -50,6 +53,9 @@ app.register(adminOrdersRoutes, { prefix: "/api/admin" });
 app.register(adminProductsRoutes, { prefix: "/api/admin" });
 app.register(adminCategoriesRoutes, { prefix: "/api/admin" });
 app.register(adminSettingsRoutes, { prefix: "/api/admin" });
+app.register(adminBannersRoutes, { prefix: "/api/admin" });
+app.register(adminDeliveryZonesRoutes, { prefix: "/api/admin" });
+app.register(adminPromoCodesRoutes, { prefix: "/api/admin" });
 
 // ─── START ──────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT ?? "4000", 10);

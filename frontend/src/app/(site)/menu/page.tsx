@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
 import MenuAddToCart from "@/components/ui/MenuAddToCart";
 
 export const metadata: Metadata = {
@@ -8,16 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MenuPage() {
-  const categories = await prisma.category.findMany({
-    where: { is_active: true },
-    orderBy: { sort_order: "asc" },
-    include: {
-      products: {
-        where: { is_active: true, is_hidden: false },
-        orderBy: { sort_order: "asc" },
-      },
-    },
-  });
+  const categories = await AppApi.categories.list(true).catch(() => []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
@@ -30,7 +21,7 @@ export default async function MenuPage() {
         </div>
       )}
 
-      {categories.map((cat) => (
+      {categories.map((cat: any) => (
         <section key={cat.id} className="mb-14">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
             {cat.name_ru}
@@ -40,7 +31,7 @@ export default async function MenuPage() {
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {cat.products.map((p) => (
+            {cat.products.map((p: any) => (
               <a
                 key={p.id}
                 href={`/product/${p.slug}`}

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
 
 export const metadata: Metadata = {
   title: "Отслеживание заказа",
@@ -29,12 +29,7 @@ interface Props {
 }
 
 export default async function TrackPage({ params }: Props) {
-  const order = await prisma.order.findUnique({
-    where: { public_status_token: params.token },
-    include: {
-      items: true,
-    },
-  });
+  const order = await AppApi.orders.track(params.token).catch(() => null);
 
   if (!order) notFound();
 
@@ -92,7 +87,7 @@ export default async function TrackPage({ params }: Props) {
       <div className="card p-6">
         <h2 className="font-bold text-white mb-4">Состав заказа</h2>
         <div className="space-y-3">
-          {order.items.map((item) => (
+          {order.items.map((item: any) => (
             <div key={item.id} className="flex items-center justify-between text-sm">
               <div>
                 <p className="text-white">{item.product_name_snapshot}</p>

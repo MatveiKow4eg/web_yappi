@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -8,14 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PromotionsPage() {
-  const banners = await prisma.banner.findMany({
-    where: {
-      is_active: true,
-      OR: [{ starts_at: null }, { starts_at: { lte: new Date() } }],
-      AND: [{ OR: [{ ends_at: null }, { ends_at: { gte: new Date() } }] }],
-    },
-    orderBy: { sort_order: "asc" },
-  });
+  const banners = await AppApi.banners.list().catch(() => []);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
@@ -31,7 +24,7 @@ export default async function PromotionsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {banners.map((b) => (
+          {banners.map((b: any) => (
             <div key={b.id} className="card overflow-hidden group">
               <div className="aspect-video bg-brand-gray-mid relative overflow-hidden">
                 {b.image_url ? (

@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import KitchenOrderActions from "./KitchenOrderActions";
@@ -24,11 +25,9 @@ const STATUS_BG: Record<string, string> = {
 };
 
 export default async function KitchenPage() {
-  const orders = await prisma.order.findMany({
-    where: { status: { in: ["new", "confirmed_preparing", "ready"] } },
-    orderBy: { created_at: "asc" },
-    include: { items: { include: { selections: true } } },
-  });
+  const token = cookies().get("admin_token")?.value;
+  const res = await AppApi.admin.orders.list({ statuses: "new,confirmed_preparing,ready", limit: 0 }, token).catch(() => ({ orders: [] }));
+  const orders = res.orders || [];
 
   return (
     <div className="min-h-screen bg-brand-black p-4">
@@ -53,7 +52,7 @@ export default async function KitchenPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {orders.map((order) => (
+        {orders.map((order: any) => (
           <div
             key={order.id}
             className={`rounded-2xl border p-4 ${STATUS_BG[order.status] ?? "border-white/10 bg-brand-gray-dark"}`}
@@ -78,7 +77,7 @@ export default async function KitchenPage() {
 
             {/* Items */}
             <div className="space-y-2 mb-4">
-              {order.items.map((item) => (
+              {order.items.map((item: any) => (
                 <div key={item.id} className="flex justify-between text-sm border-b border-white/5 pb-1.5">
                   <div>
                     <p className="text-white font-semibold">
@@ -87,7 +86,7 @@ export default async function KitchenPage() {
                     {item.variant_name_snapshot && (
                       <p className="text-brand-text-muted text-xs">{item.variant_name_snapshot}</p>
                     )}
-                    {item.selections.map((s) => (
+                    {item.selections.map((s: any) => (
                       <p key={s.id} className="text-brand-text-muted text-xs">
                         {s.option_group_name_snapshot}: {s.option_item_name_snapshot}
                       </p>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
 import AddToCartButton from "@/components/ui/AddToCartButton";
 
 interface Props {
@@ -8,9 +8,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
-  });
+  const product = await AppApi.products.getBySlug(params.slug).catch(() => null);
   if (!product) return { title: "Не найдено" };
   return {
     title: product.name_ru,
@@ -19,22 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
-    include: {
-      category: true,
-      variants: { where: { is_active: true }, orderBy: { sort_order: "asc" } },
-      option_links: {
-        include: {
-          option_group: {
-            include: {
-              items: { where: { is_active: true }, orderBy: { sort_order: "asc" } },
-            },
-          },
-        },
-      },
-    },
-  });
+  const product = await AppApi.products.getBySlug(params.slug).catch(() => null);
 
   if (!product || !product.is_active) notFound();
 
@@ -77,7 +60,7 @@ export default async function ProductPage({ params }: Props) {
             <div className="mb-6">
               <p className="text-sm font-semibold text-white mb-2">Вариант</p>
               <div className="flex flex-wrap gap-2">
-                {product.variants.map((v) => (
+                {product.variants.map((v: any) => (
                   <span
                     key={v.id}
                     className="px-4 py-2 rounded-xl bg-brand-gray-mid border border-white/10 text-sm text-white cursor-pointer hover:border-brand-red transition-colors"
@@ -90,11 +73,11 @@ export default async function ProductPage({ params }: Props) {
           )}
 
           {/* Option groups */}
-          {product.option_links.map(({ option_group: g }) => (
+          {product.option_links.map(({ option_group: g }: any) => (
             <div key={g.id} className="mb-4">
               <p className="text-sm font-semibold text-white mb-2">{g.name_ru}</p>
               <div className="flex flex-wrap gap-2">
-                {g.items.map((item) => (
+                {g.items.map((item: any) => (
                   <span
                     key={item.id}
                     className="px-3 py-2 rounded-xl bg-brand-gray-mid border border-white/10 text-sm text-brand-text-muted cursor-pointer hover:border-brand-red hover:text-white transition-colors"

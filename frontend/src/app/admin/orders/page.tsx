@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -32,18 +33,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1"));
   const limit = 25;
 
-  const where = status ? { status: status as never } : {};
-
-  const [orders, total] = await Promise.all([
-    prisma.order.findMany({
-      where,
-      orderBy: { created_at: "desc" },
-      take: limit,
-      skip: (page - 1) * limit,
-      include: { items: { select: { quantity: true } } },
-    }),
-    prisma.order.count({ where }),
-  ]);
+  const token = cookies().get("admin_token")?.value;
+  const res = await AppApi.admin.orders.list({ status, page, limit }, token).catch(() => ({ orders: [], total: 0 }));
+  const { orders = [], total = 0 } = res as any;
 
   const totalPages = Math.ceil(total / limit);
 
@@ -99,7 +91,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
+                {orders.map((order: any) => (
                   <tr
                     key={order.id}
                     className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors"

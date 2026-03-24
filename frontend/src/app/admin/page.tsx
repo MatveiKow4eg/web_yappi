@@ -1,21 +1,17 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
-  const [totalOrders, todayOrders, pendingOrders] = await Promise.all([
-    prisma.order.count(),
-    prisma.order.count({
-      where: { created_at: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-    }),
-    prisma.order.count({ where: { status: { in: ["new", "confirmed_preparing"] } } }),
-  ]);
+  const token = cookies().get("admin_token")?.value;
+  
+  const statsFallback = { totalOrders: 0, todayOrders: 0, pendingOrders: 0 };
+  const stats = await AppApi.admin.stats(token).catch(() => statsFallback);
+  const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
 
-  const recentOrders = await prisma.order.findMany({
-    orderBy: { created_at: "desc" },
-    take: 10,
-    include: { items: true },
-  });
+  const res = await AppApi.admin.orders.list({ limit: 10 }, token).catch(() => ({ orders: [] }));
+  const recentOrders = res.orders || [];
 
   const STATUS_CLASSES: Record<string, string> = {
     new: "badge-gray",
@@ -78,7 +74,7 @@ export default async function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
+                {recentOrders.map((order: any) => (
                   <tr
                     key={order.id}
                     className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors"

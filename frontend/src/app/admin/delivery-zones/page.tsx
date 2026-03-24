@@ -1,11 +1,13 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Зоны доставки — Админка" };
 
 export default async function AdminDeliveryZonesPage() {
-  const zones = await prisma.deliveryZone.findMany({ orderBy: { name: "asc" } });
+  const token = cookies().get("admin_token")?.value;
+  const zones = await AppApi.admin.deliveryZones.list(token).catch(() => []);
 
   return (
     <div className="flex min-h-screen">
@@ -16,7 +18,7 @@ export default async function AdminDeliveryZonesPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {zones.map((z) => (
+          {zones.map((z: any) => (
             <div key={z.id} className="card p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-white font-bold">{z.name}</h3>

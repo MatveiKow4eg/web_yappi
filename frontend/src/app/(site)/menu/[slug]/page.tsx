@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -9,30 +9,18 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const cat = await prisma.category.findUnique({ where: { slug: params.slug } });
+  const cat = await AppApi.categories.getBySlug(params.slug).catch(() => null);
   if (!cat) return { title: "Не найдено" };
   return { title: `${cat.name_ru} — Yappi Sushi` };
 }
 
 export default async function CategoryMenuPage({ params }: Props) {
-  const category = await prisma.category.findUnique({
-    where: { slug: params.slug, is_active: true },
-    include: {
-      products: {
-        where: { is_active: true, is_hidden: false },
-        orderBy: { sort_order: "asc" },
-      },
-    },
-  });
+  const category = await AppApi.categories.getBySlug(params.slug).catch(() => null);
 
   if (!category) notFound();
 
   // all categories for sidebar nav
-  const allCategories = await prisma.category.findMany({
-    where: { is_active: true },
-    orderBy: { sort_order: "asc" },
-    select: { slug: true, name_ru: true },
-  });
+  const allCategories = await AppApi.categories.list().catch(() => []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
@@ -44,7 +32,7 @@ export default async function CategoryMenuPage({ params }: Props) {
         >
           Все
         </Link>
-        {allCategories.map((c) => (
+        {allCategories.map((c: any) => (
           <Link
             key={c.slug}
             href={`/menu/${c.slug}`}
@@ -63,7 +51,7 @@ export default async function CategoryMenuPage({ params }: Props) {
       <p className="text-brand-text-muted mb-8">{category.products.length} позиций</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {category.products.map((p) => (
+        {category.products.map((p: any) => (
           <a
             key={p.id}
             href={`/product/${p.slug}`}

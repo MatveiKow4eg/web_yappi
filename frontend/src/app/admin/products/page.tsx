@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -6,10 +7,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Товары — Админка" };
 
 export default async function AdminProductsPage() {
-  const products = await prisma.product.findMany({
-    orderBy: [{ category_id: "asc" }, { sort_order: "asc" }],
-    include: { category: { select: { name_ru: true } } },
-  });
+  const token = cookies().get("admin_token")?.value;
+  const res: any = await AppApi.admin.products.list(token).catch(() => ({ products: [] }));
+  const products: any[] = res.products || res || []; // Handle both array and object responses where possible
 
   return (
     <div className="flex min-h-screen">
@@ -37,7 +37,7 @@ export default async function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => (
+                {products.map((p: any) => (
                   <tr
                     key={p.id}
                     className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors"

@@ -1,14 +1,13 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Категории — Админка" };
 
 export default async function AdminCategoriesPage() {
-  const categories = await prisma.category.findMany({
-    orderBy: { sort_order: "asc" },
-    include: { _count: { select: { products: true } } },
-  });
+  const token = cookies().get("admin_token")?.value;
+  const categories = await AppApi.admin.categories.list(token).catch(() => []);
 
   return (
     <div className="flex min-h-screen">
@@ -33,7 +32,7 @@ export default async function AdminCategoriesPage() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((cat) => (
+                {categories.map((cat: any) => (
                   <tr
                     key={cat.id}
                     className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors"

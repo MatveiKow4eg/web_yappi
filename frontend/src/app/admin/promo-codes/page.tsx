@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -6,10 +7,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Промокоды — Админка" };
 
 export default async function AdminPromoCodesPage() {
-  const codes = await prisma.promoCode.findMany({
-    orderBy: { created_at: "desc" },
-    include: { _count: { select: { usages: true } } },
-  });
+  const token = cookies().get("admin_token")?.value;
+  const codes = await AppApi.admin.promoCodes.list(token).catch(() => []);
 
   return (
     <div className="flex min-h-screen">
@@ -38,7 +37,7 @@ export default async function AdminPromoCodesPage() {
                 </tr>
               </thead>
               <tbody>
-                {codes.map((c) => (
+                {codes.map((c: any) => (
                   <tr key={c.id} className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors">
                     <td className="px-4 py-3">
                       <span className="text-white font-mono font-bold tracking-wide">{c.code}</span>

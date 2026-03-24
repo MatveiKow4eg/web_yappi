@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
+import { cookies } from "next/headers";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -6,7 +7,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Баннеры — Админка" };
 
 export default async function AdminBannersPage() {
-  const banners = await prisma.banner.findMany({ orderBy: { sort_order: "asc" } });
+  const token = cookies().get("admin_token")?.value;
+  const banners = await AppApi.admin.banners.list(token).catch(() => []);
 
   return (
     <div className="flex min-h-screen">
@@ -20,7 +22,7 @@ export default async function AdminBannersPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {banners.map((b) => (
+          {banners.map((b: any) => (
             <div key={b.id} className="card overflow-hidden">
               <div className="aspect-video bg-brand-gray-mid relative">
                 {b.image_url ? (

@@ -17,25 +17,46 @@ const STATUS_TIMESTAMPS: Record<string, string> = {
 };
 
 export default async function adminOrdersRoutes(app: FastifyInstance) {
+  // GET /api/admin/stats
+  app.get("/stats", async (req, reply) => {
+    const session = await getAdminSession(req);
+    if (!requireAdminSession(session, reply)) return;
+
+    const [totalOrders, todayOrders, pendingOrders] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.count({
+        where: { created_at: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+      }),
+      prisma.order.count({ where: { status: { in: ["new", "confirmed_preparing"] } } }),
+    ]);
+
+    return ok(reply, { totalOrders, todayOrders, pendingOrders });
+  });
+
   // GET /api/admin/orders
-  app.get<{ Querystring: { status?: string; page?: string; limit?: string } }>(
+  app.get<{ Querystring: { status?: string; statuses?: string; page?: string; limit?: string } }>(
     "/orders",
     async (req, reply) => {
       const session = await getAdminSession(req);
       if (!requireAdminSession(session, reply)) return;
 
-      const { status, page = "1", limit = "20" } = req.query;
+      const { status, statuses, page = "1", limit = "20" } = req.query;
       const skip = (parseInt(page) - 1) * parseInt(limit);
+      
+      let statusFilter: any = {};
+      if (status) statusFilter = { status };
+      if (statuses) statusFilter = { status: { in: statuses.split(",") } };
 
       const [orders, total] = await Promise.all([
         prisma.order.findMany({
-          where: status ? { status } : {},
+          where: statusFilter,
           orderBy: { created_at: "desc" },
           skip,
-          take: parseInt(limit),
-          include: { items: true, promo_code: { select: { code: true } } },
+          // If limit=0, take everything (for kitchen)
+          ...(parseInt(limit) > 0 ? { take: parseInt(limit) } : {}),
+          include: { items: { include: { selections: true } }, promo_code: { select: { code: true } } },
         }),
-        prisma.order.count({ where: status ? { status } : {} }),
+        prisma.order.count({ where: statusFilter }),
       ]);
 
       return ok(reply, { orders, total, page: parseInt(page), limit: parseInt(limit) });

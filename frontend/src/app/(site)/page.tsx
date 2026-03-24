@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { AppApi } from "@/lib/api-client";
 import type { Metadata } from "next";
 import Link from "next/link";
 import MenuAddToCart from "@/components/ui/MenuAddToCart";
@@ -9,23 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const categories = await prisma.category.findMany({
-    where: { is_active: true },
-    orderBy: { sort_order: "asc" },
-    include: {
-      products: {
-        where: { is_active: true, is_hidden: false },
-        orderBy: { sort_order: "asc" },
-        take: 8,
-      },
-    },
-  }).catch(() => []);
-
-  const allProducts = await prisma.product.findMany({
-    where: { is_active: true, is_hidden: false, is_available: true },
-    orderBy: { sort_order: "asc" },
-    take: 6,
-  }).catch(() => []);
+  const categories = await AppApi.categories.list(true).catch((e) => {
+    console.error("Failed to fetch categories from API", e);
+    return [];
+  });
 
   return (
     <>
@@ -202,7 +189,7 @@ export default async function HomePage() {
         ) : (
           // Real data from DB
           <div className="space-y-12">
-            {categories.filter(c => c.products.length > 0).map((cat) => (
+            {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
               <div key={cat.id}>
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-xl font-bold text-white">{cat.name_ru}</h3>
@@ -211,7 +198,7 @@ export default async function HomePage() {
                   </Link>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {cat.products.map((p) => (
+                  {cat.products.map((p: any) => (
                     <a
                       key={p.id}
                       href={`/product/${p.slug}`}
