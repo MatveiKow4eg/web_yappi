@@ -120,6 +120,11 @@ export default function AdminProductsTable() {
                     <td className="px-4 py-3">
                       <p className="text-white font-medium">{p.name_ru}</p>
                       <p className="text-brand-text-muted text-xs font-mono">{p.slug}</p>
+                      {p.image_url && (
+                        <p className="text-brand-text-muted text-xs font-mono mt-0.5">
+                          №{p.image_url.replace(/^#\s*/, "").trim()}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-brand-text-muted">{p.category?.name_ru ?? "—"}</td>
                     <td className="px-4 py-3 text-right">
