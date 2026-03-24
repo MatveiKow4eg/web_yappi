@@ -137,6 +137,18 @@ export default function NewProductForm({ categories }: Props) {
             </div>
           </div>
 
+          <div>
+            <label className="block text-sm text-brand-text-muted mb-1.5">Номер позиции</label>
+            <input
+              type="text"
+              name="image_url"
+              value={form.image_url}
+              onChange={handleChange}
+              className="input"
+              placeholder="# 123"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-brand-text-muted mb-1.5">Название (EN)</label>
@@ -196,26 +208,6 @@ export default function NewProductForm({ categories }: Props) {
               placeholder="12.90"
             />
           </div>
-        </div>
-      </div>
-
-      {/* Image */}
-      <div className="card p-6">
-        <h2 className="font-bold text-white mb-4">Изображение</h2>
-        <div>
-          <label className="block text-sm text-brand-text-muted mb-1.5">Изображение (URL / путь / код)</label>
-          <input
-            type="text"
-            name="image_url"
-            value={form.image_url}
-            onChange={handleChange}
-            className="input"
-            placeholder="# 101 или /images/sushi/%23%20101.jpg или https://..."
-          />
-          <p className="text-xs text-brand-text-muted mt-2">
-            Для кода вида # nnn фронт автоматически ищет файл по пути
-            /images/sushi/%23%20nnn.jpg
-          </p>
         </div>
       </div>
 
