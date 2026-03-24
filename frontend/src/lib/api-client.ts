@@ -51,9 +51,20 @@ export interface Order {
   id: string;
   order_number: string;
   tracking_token: string;
+  type: "delivery" | "pickup";
   status: string;
+  payment_method: string;
+  customer_name: string;
+  address_line?: string;
   total_amount: number;
   created_at: string;
+  items: Array<{
+    id: string;
+    product_name_snapshot: string;
+    variant_name_snapshot?: string;
+    quantity: number;
+    line_total: number;
+  }>;
 }
 
 export interface AdminLoginRequest {
