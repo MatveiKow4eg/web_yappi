@@ -60,6 +60,20 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
     }
   );
 
+  // GET /api/admin/products/:id
+  app.get<{ Params: { id: string } }>("/products/:id", async (req, reply) => {
+    const session = await getAdminSession(req);
+    if (!requireAdminSession(session, reply)) return;
+
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id },
+      include: { category: { select: { id: true, name_ru: true, slug: true } } },
+    });
+
+    if (!product) return err(reply, "Товар не найден", 404);
+    return ok(reply, product);
+  });
+
   // POST /api/admin/products
   app.post("/products", async (req, reply) => {
     const session = await getAdminSession(req);

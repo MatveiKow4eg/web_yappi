@@ -50,6 +50,19 @@ async function adminProductsRoutes(app) {
         ]);
         return (0, session_1.ok)(reply, { products, total });
     });
+    // GET /api/admin/products/:id
+    app.get("/products/:id", async (req, reply) => {
+        const session = await (0, session_1.getAdminSession)(req);
+        if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        const product = await prisma_1.prisma.product.findUnique({
+            where: { id: req.params.id },
+            include: { category: { select: { id: true, name_ru: true, slug: true } } },
+        });
+        if (!product)
+            return (0, session_1.err)(reply, "Товар не найден", 404);
+        return (0, session_1.ok)(reply, product);
+    });
     // POST /api/admin/products
     app.post("/products", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
