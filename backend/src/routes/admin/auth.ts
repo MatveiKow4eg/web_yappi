@@ -35,9 +35,9 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
     reply.setCookie("admin_token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: ".yappisushi.ee",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      ...(isProduction ? { domain: ".yappisushi.ee" } : {}),
       path: "/",
       maxAge: 60 * 60 * 8, // 8h
     });
