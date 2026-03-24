@@ -20,9 +20,15 @@ export interface Product {
   name_ru: string;
   name_en: string;
   name_et: string;
+  description_ru?: string;
+  description_en?: string;
+  description_et?: string;
   image_url?: string;
   base_price: number;
   old_price?: number;
+  is_active?: boolean;
+  is_available?: boolean;
+  category?: CategorySummary;
   variants?: ProductVariant[];
 }
 
