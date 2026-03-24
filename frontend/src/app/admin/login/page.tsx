@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { AppApi } from "@/lib/api-client";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -13,24 +11,14 @@ export default function AdminLoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    console.log("[AdminLogin] submit handler called");
-    console.log("[AdminLogin] payload", {
-      email,
-      passwordLength: password.length,
-      apiBase: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
-    });
     setError(null);
     setLoading(true);
 
     try {
-      console.log("[AdminLogin] sending POST /api/admin/auth/login");
-      const response = await AppApi.admin.auth.login({ email, password });
-      console.log("[AdminLogin] login success", response);
-
-      router.push("/admin");
-      router.refresh();
+      await AppApi.admin.auth.login({ email, password });
+      // Use full navigation so middleware gets the latest cookie immediately.
+      window.location.assign("/admin");
     } catch (err: any) {
-      console.error("[AdminLogin] login failed", err);
       setError(err.message || "Ошибка соединения. Попробуйте снова.");
     } finally {
       setLoading(false);
