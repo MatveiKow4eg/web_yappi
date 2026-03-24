@@ -43,17 +43,16 @@ jobs:
           password: ${{ secrets.VULTR_SSH_PASSWORD }}
           script: |
             cd /var/www/yappi-sushi/backend
-            
-            # Устанавливаем зависимости
+
             npm install
-            
-            # Создаем или обновляем .env файл на сервере (заменяем секретом из GitHub)
-            echo "DATABASE_URL=\"postgresql://yappi:yappi_secure_2026@localhost:5432/yappisushi?schema=public\"" > .env
-            echo "PORT=3001" >> .env
-            
-            # Генерируем клиент Prisma и применяем миграции
+
+            echo "DATABASE_URL=\"${{ secrets.DATABASE_URL }}\"" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "PORT=4000" >> .env
+            echo "NODE_ENV=production" >> .env
+            echo "ALLOWED_ORIGINS=https://yappisushi.ee,https://www.yappisushi.ee" >> .env
+
             npx prisma generate
             npx prisma migrate deploy
-            
-            # Перезапускаем PM2 или просто node
-            pm2 restart yappi-backend || pm2 start src/app.ts --interpreter ./node_modules/.bin/ts-node --name "yappi-backend"
+
+            pm2 restart yappi-backend --update-env || pm2 start src/app.ts --interpreter ./node_modules/.bin/ts-node --name "yappi-backend"
