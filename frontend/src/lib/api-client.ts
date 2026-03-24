@@ -54,16 +54,41 @@ export interface Order {
   type: "delivery" | "pickup";
   status: string;
   payment_method: string;
+  payment_status?: string;
   customer_name: string;
+  customer_phone?: string;
+  language_code?: string;
   address_line?: string;
+  apartment?: string;
+  entrance?: string;
+  floor?: string;
+  door_code?: string;
+  comment?: string;
+  promo_code?: {
+    code: string;
+  };
+  subtotal_amount?: number;
+  delivery_fee?: number;
+  discount_amount?: number;
   total_amount: number;
   created_at: string;
+  confirmed_at?: string;
+  ready_at?: string;
+  sent_at?: string;
+  completed_at?: string;
+  cancelled_at?: string;
   items: Array<{
     id: string;
     product_name_snapshot: string;
     variant_name_snapshot?: string;
     quantity: number;
     line_total: number;
+    selections?: Array<{
+      id: string;
+      option_group_name_snapshot: string;
+      option_item_name_snapshot: string;
+      price_delta: number;
+    }>;
   }>;
 }
 
