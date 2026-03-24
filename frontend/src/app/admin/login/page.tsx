@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { AppApi } from "@/lib/api-client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,20 +16,12 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      await AppApi.admin.auth.login({ email, password }).catch((err) => {
+        throw new Error(err.message || "Ошибка соединения. Попробуйте снова.");
       });
 
-      const data = await res.json();
-
-      if (!data.ok) {
-        setError(data.error ?? "Неверный email или пароль");
-      } else {
-        router.push("/admin");
-        router.refresh();
-      }
+      router.push("/admin");
+      router.refresh();
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {

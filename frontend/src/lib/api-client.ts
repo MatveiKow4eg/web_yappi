@@ -50,8 +50,11 @@ export const AppApi = {
     track: (token: string) => fetchApi<any>(`/api/orders/track/${token}`),
   },
   admin: {
+    auth: {
+      login: (credentials: any) => fetchApi<any>("/api/admin/auth/login", { method: "POST", body: JSON.stringify(credentials) }),
+    },
     stats: (token?: string) => fetchApi<any>("/api/admin/stats", { headers: token ? { Cookie: `admin_token=${token}` } : {} }),
-     orders: {
+    orders: {
       list: (params: any, token?: string) => {
         const qs = new URLSearchParams();
         Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, String(v)); });
