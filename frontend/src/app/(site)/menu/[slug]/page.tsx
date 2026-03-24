@@ -101,7 +101,7 @@ export default async function CategoryMenuPage({ params }: Props) {
             </div>
           </a>
         ))}
-        {category.products.length === 0 && (
+        {category.products?.length === 0 && (
           <div className="col-span-4 card p-12 text-center text-brand-text-muted">
             В этой категории пока нет товаров
           </div>
