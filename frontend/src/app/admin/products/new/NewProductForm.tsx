@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 interface Category {
@@ -14,6 +14,9 @@ interface Props {
 
 export default function NewProductForm({ categories }: Props) {
   const router = useRouter();
+  const [categoryOptions, setCategoryOptions] = useState<Category[]>(categories);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +35,49 @@ export default function NewProductForm({ categories }: Props) {
     is_available: true,
     is_active: true,
   });
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCategories() {
+      setCategoriesLoading(true);
+      setCategoriesError(null);
+
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+        const res = await fetch(`${apiBase}/api/admin/categories`, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await res.json();
+        if (!res.ok || data?.ok === false) {
+          throw new Error(data?.error || "Не удалось загрузить категории");
+        }
+
+        if (!active) return;
+
+        const list = Array.isArray(data?.data) ? data.data : [];
+        setCategoryOptions(list);
+        setForm((prev) => ({
+          ...prev,
+          category_id: prev.category_id || list[0]?.id || "",
+        }));
+      } catch (e) {
+        if (!active) return;
+        setCategoriesError(e instanceof Error ? e.message : "Не удалось загрузить категории");
+      } finally {
+        if (active) setCategoriesLoading(false);
+      }
+    }
+
+    loadCategories();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -98,13 +144,27 @@ export default function NewProductForm({ categories }: Props) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-brand-text-muted mb-1.5">Категория *</label>
-            <select name="category_id" value={form.category_id} onChange={handleChange} className="input">
-              {categories.map((c) => (
+            <select
+              name="category_id"
+              value={form.category_id}
+              onChange={handleChange}
+              className="input"
+              disabled={categoriesLoading || categoryOptions.length === 0}
+            >
+              {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id} className="bg-brand-gray-dark">
                   {c.name_ru}
                 </option>
               ))}
+              {categoryOptions.length === 0 && (
+                <option value="" className="bg-brand-gray-dark">
+                  {categoriesLoading ? "Загрузка..." : "Нет категорий"}
+                </option>
+              )}
             </select>
+            {categoriesError && (
+              <p className="text-xs text-brand-red mt-2">{categoriesError}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

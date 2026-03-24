@@ -1,4 +1,3 @@
-import { AppApi } from "@/lib/api-client";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import NewProductForm from "./NewProductForm";
 import type { Metadata } from "next";
@@ -6,8 +5,6 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Новый товар — Админка" };
 
 export default async function AdminNewProductPage() {
-  const categories = await AppApi.admin.categories.list().catch(() => []);
-
   return (
     <div className="flex min-h-screen">
       <AdminSidebar active="/admin/products" />
@@ -19,7 +16,7 @@ export default async function AdminNewProductPage() {
           <span className="text-brand-text-muted">/</span>
           <h1 className="text-2xl font-black text-white">Новый товар</h1>
         </div>
-        <NewProductForm categories={categories} />
+        <NewProductForm categories={[]} />
       </main>
     </div>
   );
