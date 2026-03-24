@@ -195,11 +195,8 @@ export default async function HomePage() {
           <div className="space-y-12">
             {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
               <div key={cat.id}>
-                <div className="flex items-center justify-between mb-5">
+                <div className="mb-5">
                   <h3 className="text-xl font-bold text-white">{cat.name_ru}</h3>
-                  <Link href={`/menu/${cat.slug}`} className="text-brand-red text-xs hover:underline">
-                    Все {cat.name_ru.toLowerCase()} →
-                  </Link>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {cat.products.map((p: any) => (
