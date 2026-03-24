@@ -67,6 +67,7 @@ export default function NewProductForm({ categories }: Props) {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/products`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,

@@ -45,6 +45,7 @@ export default function KitchenOrderActions({ orderId, currentStatus, orderType 
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/orders/${orderId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });

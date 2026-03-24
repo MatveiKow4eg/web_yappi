@@ -41,6 +41,7 @@ export default function AdminSettingsForm({ settings }: Props) {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/settings`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,

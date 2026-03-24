@@ -34,6 +34,7 @@ export default function OrderStatusForm({ orderId, currentStatus }: Props) {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/orders/${orderId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,

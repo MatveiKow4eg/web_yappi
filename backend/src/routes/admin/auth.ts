@@ -11,6 +11,9 @@ const LoginSchema = z.object({
 });
 
 const isProduction = process.env.NODE_ENV === "production";
+const cookieDomain = isProduction
+  ? process.env.COOKIE_DOMAIN?.trim() || ".yappisushi.ee"
+  : undefined;
 
 export default async function adminAuthRoutes(app: FastifyInstance) {
   // POST /api/admin/auth/login
@@ -33,12 +36,16 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
     const token = await signAdminToken({ id: admin.id, email: admin.email, role: admin.role as "admin" | "kitchen" });
 
-    reply.setCookie("admin_token", token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      ...(isProduction ? { domain: ".yappisushi.ee" } : {}),
+      sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
       path: "/",
+    };
+
+    reply.setCookie("admin_token", token, {
+      ...cookieOptions,
       maxAge: 60 * 60 * 8, // 8h
     });
 
@@ -47,7 +54,10 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
   // POST /api/admin/auth/logout
   app.post("/auth/logout", async (req, reply) => {
-    reply.clearCookie("admin_token", { path: "/" });
+    reply.clearCookie("admin_token", {
+      path: "/",
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
+    });
     return ok(reply, null);
   });
 }
