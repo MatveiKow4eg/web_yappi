@@ -87,7 +87,9 @@ export default async function CategoryMenuPage({ params }: Props) {
               )}
             </div>
             <div className="p-3">
-              <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">{p.name_ru}</p>
+              <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
+                {p.image_url ? `${p.image_url.replace(/^#\s*/, "").trim()}. ` : ""}{p.name_ru}
+              </p>
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-brand-red font-bold">

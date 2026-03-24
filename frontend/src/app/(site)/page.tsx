@@ -229,7 +229,9 @@ export default async function HomePage() {
                         )}
                       </div>
                       <div className="p-3">
-                        <p className="text-white font-semibold text-sm mb-1 line-clamp-2 leading-tight">{p.name_ru}</p>
+                        <p className="text-white font-semibold text-sm mb-1 line-clamp-2 leading-tight">
+                          {p.image_url ? `${p.image_url.replace(/^#\s*/, "").trim()}. ` : ""}{p.name_ru}
+                        </p>
                         {p.description_ru && (
                           <p className="text-brand-text-muted text-xs mb-2 line-clamp-2">{p.description_ru}</p>
                         )}
