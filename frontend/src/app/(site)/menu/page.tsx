@@ -37,7 +37,7 @@ export default async function MenuPage() {
               <a
                 key={p.id}
                 href={`/product/${p.slug}`}
-                className="card cursor-pointer block overflow-hidden"
+                className="rounded-2xl cursor-pointer block overflow-hidden"
               >
                 {/* Image */}
                 <div className="aspect-square relative overflow-hidden">
