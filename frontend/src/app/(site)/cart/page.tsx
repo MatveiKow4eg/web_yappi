@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
+import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
+import { resolveProductImageSrc } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, subtotal, totalItems, removeItem, updateQuantity, clearCart } = useCart();
@@ -46,19 +48,15 @@ export default function CartPage() {
           {items.map((item) => (
             <div key={item.key} className="card p-4 flex gap-4">
               {/* Image */}
-              <div className="w-20 h-20 rounded-xl bg-brand-gray-mid flex-shrink-0 overflow-hidden">
-                {item.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl">
-                    🍱
-                  </div>
-                )}
+              <div className="w-20 h-20 rounded-xl bg-brand-gray-mid flex-shrink-0 overflow-hidden relative">
+                <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                  🍱
+                </div>
+                <HideOnErrorImage
+                  src={resolveProductImageSrc(item.image_url) ?? ""}
+                  alt={item.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               </div>
 
               {/* Info */}

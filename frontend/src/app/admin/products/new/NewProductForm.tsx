@@ -203,15 +203,19 @@ export default function NewProductForm({ categories }: Props) {
       <div className="card p-6">
         <h2 className="font-bold text-white mb-4">Изображение</h2>
         <div>
-          <label className="block text-sm text-brand-text-muted mb-1.5">URL изображения</label>
+          <label className="block text-sm text-brand-text-muted mb-1.5">Изображение (URL / путь / код)</label>
           <input
-            type="url"
+            type="text"
             name="image_url"
             value={form.image_url}
             onChange={handleChange}
             className="input"
-            placeholder="https://..."
+            placeholder="# 101 или /images/sushi/%23%20101.jpg или https://..."
           />
+          <p className="text-xs text-brand-text-muted mt-2">
+            Для кода вида # nnn фронт автоматически ищет файл по пути
+            /images/sushi/%23%20nnn.jpg
+          </p>
         </div>
       </div>
 

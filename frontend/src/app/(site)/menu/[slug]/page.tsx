@@ -3,6 +3,16 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import MenuAddToCart from "@/components/ui/MenuAddToCart";
+import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
+import { resolveProductImageSrc } from "@/lib/utils";
+
+const FALLBACK_SUSHI_IMAGES: Record<string, string> = {
+  california: "/images/sushi/california.jpg",
+  philadelphia: "/images/sushi/philadelphia.jpg",
+  dragon: "/images/sushi/dragon.jpg",
+  set: "/images/sushi/set.jpg",
+  sushi: "/images/sushi/sushi.jpg",
+};
 
 interface Props {
   params: { slug: string };
@@ -58,16 +68,16 @@ export default async function CategoryMenuPage({ params }: Props) {
             className="card-hover group cursor-pointer block overflow-hidden"
           >
             <div className="aspect-square bg-brand-gray-mid relative overflow-hidden">
-              {p.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.image_url}
-                  alt={p.name_ru}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
-              )}
+              <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
+              <HideOnErrorImage
+                src={
+                  resolveProductImageSrc(p.image_url) ??
+                  FALLBACK_SUSHI_IMAGES[p.slug] ??
+                  ""
+                }
+                alt={p.name_ru}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
               {!p.is_available && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                   <span className="text-sm font-semibold text-white bg-brand-red px-3 py-1 rounded-full">
@@ -93,7 +103,7 @@ export default async function CategoryMenuPage({ params }: Props) {
                   <MenuAddToCart
                     product_id={p.id}
                     name={p.name_ru}
-                    image_url={p.image_url ?? undefined}
+                    image_url={resolveProductImageSrc(p.image_url) ?? undefined}
                     price={parseFloat(p.base_price.toString())}
                   />
                 )}

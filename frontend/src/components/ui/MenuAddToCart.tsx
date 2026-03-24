@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/lib/cart-context";
+import { resolveProductImageSrc } from "@/lib/utils";
 
 interface Props {
   product_id: string;
@@ -16,7 +17,13 @@ export default function MenuAddToCart({ product_id, name, image_url, price }: Pr
     <button
       onClick={(e) => {
         e.preventDefault();
-        addItem({ product_id, name, image_url, unit_price: price, selections: [] });
+        addItem({
+          product_id,
+          name,
+          image_url: resolveProductImageSrc(image_url),
+          unit_price: price,
+          selections: [],
+        });
       }}
       className="w-8 h-8 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 flex-shrink-0"
       aria-label="Добавить в корзину"

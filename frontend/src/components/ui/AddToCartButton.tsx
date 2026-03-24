@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/lib/cart-context";
+import { resolveProductImageSrc } from "@/lib/utils";
 
 interface AddToCartButtonProps {
   product_id: string;
@@ -39,7 +40,7 @@ export default function AddToCartButton({
       product_variant_id,
       name,
       variant_name,
-      image_url,
+      image_url: resolveProductImageSrc(image_url),
       unit_price,
       selections,
     });

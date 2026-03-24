@@ -3,6 +3,19 @@ import { prisma } from "../../lib/prisma";
 import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
 import { z } from "zod";
 
+const ImageRefSchema = z.string().trim().refine(
+  (value) => {
+    if (!value) return true;
+    return (
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.startsWith("/") ||
+      value.startsWith("#")
+    );
+  },
+  { message: "image_url должен быть URL, /path или кодом вида '# nnn'" }
+);
+
 const ProductSchema = z.object({
   category_id: z.string().uuid(),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
@@ -14,7 +27,7 @@ const ProductSchema = z.object({
   description_et: z.string().optional(),
   base_price: z.number().positive(),
   old_price: z.number().positive().optional(),
-  image_url: z.string().url().optional().or(z.literal("")),
+  image_url: ImageRefSchema.optional().or(z.literal("")),
   is_active: z.boolean().optional().default(true),
   is_hidden: z.boolean().optional().default(false),
   is_available: z.boolean().optional().default(true),

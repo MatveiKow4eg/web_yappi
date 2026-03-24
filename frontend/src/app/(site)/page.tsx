@@ -2,6 +2,8 @@ import { AppApi } from "@/lib/api-client";
 import type { Metadata } from "next";
 import Link from "next/link";
 import MenuAddToCart from "@/components/ui/MenuAddToCart";
+import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
+import { resolveProductImageSrc } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Yappi Sushi — Доставка роллов и суши",
@@ -207,18 +209,14 @@ export default async function HomePage() {
                       className="bg-brand-gray-dark rounded-2xl border border-white/5 overflow-hidden hover:border-brand-red/30 transition-all group block"
                     >
                       <div className="aspect-square bg-brand-gray-mid relative overflow-hidden">
-                        {p.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={p.image_url}
-                            alt={p.name_ru}
-                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform duration-300">
-                            🍱
-                          </div>
-                        )}
+                        <div className="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform duration-300">
+                          🍱
+                        </div>
+                        <HideOnErrorImage
+                          src={resolveProductImageSrc(p.image_url) ?? ""}
+                          alt={p.name_ru}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                         {!p.is_available && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                             <span className="text-xs font-bold text-white bg-brand-red px-2 py-1 rounded-full">Нет в наличии</span>
@@ -250,7 +248,7 @@ export default async function HomePage() {
                             <MenuAddToCart
                               product_id={p.id}
                               name={p.name_ru}
-                              image_url={p.image_url ?? undefined}
+                              image_url={resolveProductImageSrc(p.image_url) ?? undefined}
                               price={parseFloat(p.base_price.toString())}
                             />
                           )}

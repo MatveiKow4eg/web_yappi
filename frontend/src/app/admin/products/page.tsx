@@ -2,6 +2,8 @@ import { AppApi } from "@/lib/api-client";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
+import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
+import { resolveProductImageSrc } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Товары — Админка" };
 
@@ -41,17 +43,13 @@ export default async function AdminProductsPage() {
                     className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="w-10 h-10 rounded-lg bg-brand-gray-mid overflow-hidden flex items-center justify-center text-lg">
-                        {p.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={p.image_url}
-                            alt={p.name_ru}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          "🍱"
-                        )}
+                      <div className="w-10 h-10 rounded-lg bg-brand-gray-mid overflow-hidden flex items-center justify-center text-lg relative">
+                        <span className="absolute inset-0 flex items-center justify-center">🍱</span>
+                        <HideOnErrorImage
+                          src={resolveProductImageSrc(p.image_url) ?? ""}
+                          alt={p.name_ru}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
                       </div>
                     </td>
                     <td className="px-4 py-3">

@@ -38,3 +38,29 @@ export function getLocalized(
 ): string {
   return obj[`${field}_${locale}`] ?? obj[`${field}_ru`] ?? obj[`${field}_en`] ?? "";
 }
+
+/**
+ * Resolve product image reference to a browser URL.
+ * Supports:
+ * - Full URL: https://...
+ * - Absolute app path: /images/...
+ * - Code format: "# nnn" -> /images/sushi/%23%20nnn.jpg
+ */
+export function resolveProductImageSrc(imageRef?: string | null): string | undefined {
+  const value = (imageRef ?? "").trim();
+  if (!value) return undefined;
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return value;
+  }
+
+  if (value.startsWith("#")) {
+    return `/images/sushi/${encodeURIComponent(value)}.jpg`;
+  }
+
+  return undefined;
+}

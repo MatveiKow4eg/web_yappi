@@ -2,6 +2,16 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AppApi } from "@/lib/api-client";
 import AddToCartButton from "@/components/ui/AddToCartButton";
+import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
+import { resolveProductImageSrc } from "@/lib/utils";
+
+const FALLBACK_SUSHI_IMAGES: Record<string, string> = {
+  california: "/images/sushi/california.jpg",
+  philadelphia: "/images/sushi/philadelphia.jpg",
+  dragon: "/images/sushi/dragon.jpg",
+  set: "/images/sushi/set.jpg",
+  sushi: "/images/sushi/sushi.jpg",
+};
 
 interface Props {
   params: { slug: string };
@@ -28,12 +38,16 @@ export default async function ProductPage({ params }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Image */}
         <div className="aspect-square rounded-2xl bg-brand-gray-mid overflow-hidden relative">
-          {product.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.image_url} alt={product.name_ru} className="absolute inset-0 w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-8xl">🍱</div>
-          )}
+          <div className="absolute inset-0 flex items-center justify-center text-8xl">🍱</div>
+          <HideOnErrorImage
+            src={
+              resolveProductImageSrc(product.image_url) ??
+              FALLBACK_SUSHI_IMAGES[product.slug] ??
+              ""
+            }
+            alt={product.name_ru}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         </div>
 
         {/* Details */}
@@ -100,7 +114,7 @@ export default async function ProductPage({ params }: Props) {
               <AddToCartButton
                 product_id={product.id}
                 name={product.name_ru}
-                image_url={product.image_url ?? undefined}
+                image_url={resolveProductImageSrc(product.image_url) ?? undefined}
                 unit_price={price}
               />
             ) : (
