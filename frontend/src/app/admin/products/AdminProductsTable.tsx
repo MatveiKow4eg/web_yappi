@@ -102,7 +102,11 @@ export default function AdminProductsTable() {
               )}
 
               {!loading &&
-                products.map((p) => (
+                [...products].sort((a, b) => {
+                  const na = a.image_url ? parseInt(a.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
+                  const nb = b.image_url ? parseInt(b.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
+                  return na - nb;
+                }).map((p) => (
                   <tr
                     key={p.id}
                     className="border-b border-white/5 hover:bg-brand-gray-mid/50 transition-colors"
