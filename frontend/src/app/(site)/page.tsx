@@ -1,6 +1,7 @@
 import { AppApi } from "@/lib/api-client";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import MenuAddToCart from "@/components/ui/MenuAddToCart";
 import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
 import { resolveProductImageSrc } from "@/lib/utils";
@@ -20,75 +21,58 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ───────── TOP SECTION ───────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-14 sm:pb-16">
-        <div className="relative rounded-[36px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(215,38,56,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] overflow-hidden">
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_35%)]" />
-          <div className="absolute top-0 right-0 w-72 h-72 bg-brand-red/10 blur-[110px] rounded-full" />
-          <div className="absolute bottom-0 left-12 w-48 h-48 bg-white/5 blur-[90px] rounded-full" />
+      {/* ───────── HERO ───────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-10 sm:pb-12">
+        <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-gradient-to-br from-[#171717] via-[#111111] to-[#0d0d0d]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(215,38,56,0.18),transparent_38%)]" />
 
-          <div className="relative grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 px-6 sm:px-8 lg:px-10 py-8 sm:py-10 lg:py-12 items-center">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-brand-red/20 bg-brand-red/10 px-3 py-1.5 text-xs font-medium text-brand-red mb-5">
-                <span className="w-2 h-2 rounded-full bg-brand-red" />
-                Открыты сегодня до 23:00
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[0.98] max-w-xl">
-                Свежие роллы.
-                <br />
-                Нормальная доставка.
+          <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-10 items-center p-6 sm:p-8 lg:p-10">
+            <div>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[1.02] max-w-xl">
+                Свежие суши с доставкой в Tallinn
               </h1>
 
-              <p className="text-brand-text-muted text-base sm:text-lg mt-5 max-w-lg leading-relaxed">
-                Без перегруза. Выбирайте позиции, собирайте заказ и оформляйте за пару минут.
+              <p className="text-brand-text-muted text-base sm:text-lg mt-5 max-w-xl leading-relaxed">
+                Сеты, роллы, запечённые и темпура. Готовим после заказа. Доставка 30–60 минут или удобный самовывоз.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mt-7">
                 <a
                   href="#menu"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-brand-red hover:bg-brand-red-dark transition-colors text-white font-semibold"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-brand-red hover:bg-brand-red-dark transition-colors text-white font-semibold"
                 >
-                  Открыть меню
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  Смотреть меню
                 </a>
                 <Link
                   href="/promotions"
-                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-2xl border border-white/10 bg-white/[0.03] text-white font-semibold hover:bg-white/[0.06] transition-colors"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-xl border border-white/12 bg-white/[0.02] text-white font-semibold hover:border-white/25 transition-colors"
                 >
                   Акции и сеты
                 </Link>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-8 max-w-xl">
-                {[
-                  { value: "30–60", label: "мин доставка" },
-                  { value: "Pickup", label: "самовывоз" },
-                  { value: "Online", label: "оплата" },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 sm:px-4 sm:py-4">
-                    <div className="text-white font-black text-lg sm:text-xl">{item.value}</div>
-                    <div className="text-brand-text-muted text-xs sm:text-sm mt-1">{item.label}</div>
-                  </div>
-                ))}
+              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-brand-text-muted">
+                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>30–60 мин</span>
+                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>Самовывоз</span>
+                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>Онлайн-оплата</span>
+                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>Популярные сеты</span>
               </div>
             </div>
 
-            <div className="relative min-h-[280px] sm:min-h-[340px] lg:min-h-[420px] flex items-center justify-center">
-              <div className="absolute inset-x-8 inset-y-10 rounded-[32px] border border-white/10 bg-black/25 backdrop-blur-sm" />
-              <div className="absolute top-4 left-0 sm:left-6 rounded-2xl border border-white/10 bg-brand-gray-dark/80 px-4 py-3 shadow-2xl">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-brand-text-muted">today</p>
-                <p className="text-white font-semibold mt-1">Филадельфия, сет 32, лосось</p>
-              </div>
-              <div className="relative w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(215,38,56,0.2),rgba(255,255,255,0.02)_55%,transparent_70%)] flex items-center justify-center shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-                <div className="absolute inset-5 rounded-full border border-white/10" />
-                <div className="text-[7rem] sm:text-[9rem] leading-none select-none">🍣</div>
-              </div>
-              <div className="absolute right-0 sm:right-5 bottom-4 rounded-[24px] bg-brand-red text-white px-5 py-4 shadow-[0_20px_50px_rgba(215,38,56,0.35)]">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">быстрый старт</p>
-                <p className="text-xl font-black mt-1">Меню без лишних экранов</p>
+            <div className="relative lg:pl-4">
+              <div className="relative rounded-[28px] overflow-hidden border border-white/10 bg-black/40 min-h-[280px] sm:min-h-[360px] lg:min-h-[440px]">
+                <Image
+                  src="/images/sushi/115.png"
+                  alt="Сет суши"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/25 via-transparent to-transparent" />
+
+                <div className="absolute top-4 left-4 rounded-full bg-brand-red text-white text-xs font-semibold px-3 py-1.5 border border-white/20">
+                  от 30 мин
+                </div>
               </div>
             </div>
           </div>
@@ -96,7 +80,7 @@ export default async function HomePage() {
       </section>
 
       {/* ───────── MENU ───────── */}
-      <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+      <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-16">
         <div className="flex items-end justify-between mb-8">
           <div>
             <h2 className="text-3xl sm:text-4xl font-black text-white">Наше меню</h2>
