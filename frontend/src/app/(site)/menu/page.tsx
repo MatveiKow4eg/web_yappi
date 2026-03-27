@@ -25,8 +25,7 @@ export default async function MenuPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-      <h1 className="text-4xl font-black text-white mb-2">Меню</h1>
-      <p className="text-brand-text-muted mb-10">Выберите блюда и добавьте их в корзину</p>
+      <h1 className="text-4xl font-black text-white mb-10 text-center">Меню</h1>
 
       {categories.length === 0 && (
         <div className="card p-12 text-center text-brand-text-muted">
@@ -34,16 +33,31 @@ export default async function MenuPage() {
         </div>
       )}
 
-      {categories.map((cat: any) => (
-        <section key={cat.id} className="mb-14">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            {cat.name_ru}
-            <span className="text-sm font-normal text-brand-text-muted">
-              {cat.products.length} позиций
-            </span>
-          </h2>
+      {categories.length > 0 && (
+        <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 rounded-2xl border border-white/10 bg-brand-gray-dark/60 p-4">
+              <p className="text-sm font-semibold text-white mb-3">Категории</p>
+              <nav className="space-y-1">
+                {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
+                  <a
+                    key={cat.id}
+                    href={`#menu-cat-${cat.slug ?? cat.id}`}
+                    className="block rounded-lg px-3 py-2 text-sm text-brand-text-muted hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    {cat.name_ru}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </aside>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="space-y-14">
+      {categories.map((cat: any) => (
+        <section key={cat.id} id={`menu-cat-${cat.slug ?? cat.id}`} className="mb-14">
+          <h2 className="text-2xl font-bold text-white mb-6">{cat.name_ru}</h2>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
             {[...cat.products].sort((a: any, b: any) => extractSortNum(a.image_url) - extractSortNum(b.image_url)).map((p: any) => (
               <div
                 key={p.id}
@@ -109,6 +123,9 @@ export default async function MenuPage() {
           </div>
         </section>
       ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
