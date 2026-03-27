@@ -42,12 +42,20 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-brand-red;
   }
+
+  button,
+  a.inline-flex[class*="rounded"],
+  a.btn-primary,
+  a.btn-secondary,
+  a.btn-outline {
+    border-radius: 0 !important;
+  }
 }
 
 @layer components {
   /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
            bg-brand-red hover:bg-brand-red-dark
            text-white font-semibold text-sm
            transition-all duration-200 active:scale-95
@@ -55,7 +63,7 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
            bg-brand-gray-mid hover:bg-brand-gray-light
            text-white font-semibold text-sm
            border border-white/10
@@ -63,7 +71,7 @@
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
            border border-brand-red text-brand-red
            hover:bg-brand-red hover:text-white
            font-semibold text-sm
