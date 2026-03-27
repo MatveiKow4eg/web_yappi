@@ -57,7 +57,7 @@ export default function KitchenPage() {
   useEffect(() => {
     fetchSession();
     fetchOrders();
-    const interval = setInterval(fetchOrders, 30_000);
+    const interval = setInterval(fetchOrders, 5_000);
     return () => clearInterval(interval);
   }, [fetchSession, fetchOrders]);
 
