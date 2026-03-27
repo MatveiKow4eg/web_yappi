@@ -47,20 +47,14 @@ export default async function HomePage() {
 
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="inline-flex items-center gap-2 text-brand-text-muted">
-                        <svg className="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2m0 18l6-3m-6 3V2m6 15l6 3m-6-3V2m6 3l-6-3" />
-                        </svg>
+                      <span className="text-brand-text-muted">
                         Доставка
                       </span>
                       <span className="text-white font-bold">35-45 мин</span>
                     </div>
 
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="inline-flex items-center gap-2 text-brand-text-muted">
-                        <svg className="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M6 7V5a2 2 0 012-2h8a2 2 0 012 2v2m-1 0v10a2 2 0 01-2 2H8a2 2 0 01-2-2V7m3 4h6m-6 4h4" />
-                        </svg>
+                      <span className="text-brand-text-muted">
                         Самовывоз
                       </span>
                       <span className="text-white font-bold">15-20 мин</span>

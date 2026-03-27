@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Noto_Serif } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const notoSerif = Noto_Serif({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-noto",
   display: "swap",
 });
 
@@ -24,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" className={inter.variable}>
+    <html lang="ru" className={notoSerif.variable}>
       <body className="bg-brand-black text-white font-sans antialiased min-h-screen">
         {children}
       </body>
