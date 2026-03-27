@@ -260,6 +260,16 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       return err(reply, "Онлайн-оплата недоступна для заказа с нулевой суммой", 422);
     }
 
+    if (body.payment_method === "stripe") {
+      const settings = await prisma.restaurantSettings.findFirst({
+        select: { stripe_enabled: true },
+      });
+
+      if (!settings?.stripe_enabled || !process.env.STRIPE_SECRET_KEY) {
+        return err(reply, "Онлайн-оплата временно недоступна", 422);
+      }
+    }
+
     // ─── Compute checkout fingerprint for ALL payment methods ────────────────
     // This detects duplicate orders within 30 minutes regardless of payment method.
     const checkoutFingerprint = buildCheckoutFingerprint({
@@ -305,6 +315,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
             order_number: existingOrder.order_number,
             tracking_token: existingOrder.tracking_token,
             total_amount: parseFloat(existingOrder.total_amount.toString()),
+            payment_status: existingOrder.payment_status,
             stripe_checkout_url: existingSession.url,
           },
         });
@@ -317,6 +328,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
             order_number: existingOrder.order_number,
             tracking_token: existingOrder.tracking_token,
             total_amount: parseFloat(existingOrder.total_amount.toString()),
+            payment_status: existingOrder.payment_status,
           },
         });
       }
@@ -337,6 +349,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
           order_number: existingOrder.order_number,
           tracking_token: existingOrder.tracking_token,
           total_amount: parseFloat(existingOrder.total_amount.toString()),
+          payment_status: existingOrder.payment_status,
         },
       });
     }
@@ -397,19 +410,6 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
 
     // ─── Stripe Checkout ────────────────────────────────────────
     if (body.payment_method === "stripe") {
-      // Guard: check stripe is enabled in restaurant settings
-      const settings = await prisma.restaurantSettings.findFirst({
-        select: { stripe_enabled: true },
-      });
-      if (!settings?.stripe_enabled) {
-        // Order was already created — cancel it so it doesn't stay orphaned
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: "cancelled", cancel_reason: "Stripe недоступен" },
-        });
-        return err(reply, "Онлайн-оплата временно недоступна", 422);
-      }
-
       const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
       const stripe = getStripe();
 
@@ -474,6 +474,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
             order_number: order.order_number,
             tracking_token: order.tracking_token,
             total_amount: totalAmount,
+            payment_status: order.payment_status,
             stripe_checkout_url: session.url,
           },
         });
@@ -501,6 +502,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         order_number: order.order_number,
         tracking_token: order.tracking_token,
         total_amount: totalAmount,
+        payment_status: order.payment_status,
       },
     });
   });

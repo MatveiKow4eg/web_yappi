@@ -14,10 +14,12 @@ type PaymentMethod =
   | "card_on_delivery";
 
 const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
+const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  const stripeAvailable = Boolean(STRIPE_PUBLISHABLE_KEY);
 
   const [type, setType] = useState<OrderType>("delivery");
   const [payment, setPayment] = useState<PaymentMethod>("cash_on_delivery");
@@ -119,11 +121,19 @@ export default function CheckoutPage() {
 
     if (params.get("cancelled") === "1") {
       setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
-      setPayment("stripe");
+      if (stripeAvailable) {
+        setPayment("stripe");
+      }
     } else {
       setStripeNotice(null);
     }
-  }, []);
+  }, [stripeAvailable]);
+
+  useEffect(() => {
+    if (!stripeAvailable && payment === "stripe") {
+      setPayment(type === "delivery" ? "cash_on_delivery" : "cash_on_pickup");
+    }
+  }, [payment, stripeAvailable, type]);
 
   async function applyPromo() {
     if (!promoCode.trim()) return;
@@ -210,10 +220,22 @@ export default function CheckoutPage() {
       if (!data.ok) {
         setError(data.error ?? "Ошибка при оформлении заказа");
       } else {
-        if (data.data.stripe_checkout_url) {
-          // Keep cart and draft until Stripe actually confirms payment.
-          // This lets the user return from cancel_url without losing the checkout state.
-          window.location.href = data.data.stripe_checkout_url;
+        if (payment === "stripe") {
+          if (data.data.stripe_checkout_url) {
+            // Keep cart and draft until Stripe actually confirms payment.
+            // This lets the user return from cancel_url without losing the checkout state.
+            window.location.href = data.data.stripe_checkout_url;
+            return;
+          }
+
+          if (data.data.payment_status === "paid") {
+            sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+            clearCart();
+            router.push(`/track/${data.data.tracking_token}`);
+            return;
+          }
+
+          setError("Онлайн-оплата сейчас недоступна. Заказ не был отправлен в Stripe.");
         } else {
           clearCart();
           sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
@@ -239,6 +261,10 @@ export default function CheckoutPage() {
           { value: "card_on_pickup", label: "💳 Картой при получении" },
           { value: "stripe", label: "🌐 Онлайн (Stripe)" },
         ];
+
+  const visiblePaymentOptions = paymentOptions.filter(
+    (option) => option.value !== "stripe" || stripeAvailable
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
@@ -361,7 +387,7 @@ export default function CheckoutPage() {
             <div className="card p-6">
               <h2 className="font-bold text-white mb-4">Способ оплаты</h2>
               <div className="space-y-2">
-                {paymentOptions.map((opt) => (
+                {visiblePaymentOptions.map((opt) => (
                   <label
                     key={opt.value}
                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
