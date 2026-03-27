@@ -4,24 +4,42 @@ import { useState, FormEvent } from "react";
 import type { RestaurantSettings } from "@prisma/client";
 
 interface Props {
-  settings: RestaurantSettings;
+  settings: Partial<RestaurantSettings> | null;
 }
 
+const fallbackSettings = {
+  restaurant_name: "Yappi Sushi",
+  phone: "",
+  email: "",
+  address_ru: "",
+  address_en: "",
+  address_et: "",
+  pickup_enabled: true,
+  delivery_enabled: true,
+  stripe_enabled: false,
+  cash_on_pickup_enabled: true,
+  card_on_pickup_enabled: true,
+  min_delivery_time_minutes: 30,
+  max_delivery_time_minutes: 60,
+};
+
 export default function AdminSettingsForm({ settings }: Props) {
+  const safeSettings = { ...fallbackSettings, ...(settings ?? {}) };
+
   const [form, setForm] = useState({
-    restaurant_name: settings.restaurant_name,
-    phone: settings.phone ?? "",
-    email: settings.email ?? "",
-    address_ru: settings.address_ru ?? "",
-    address_en: settings.address_en ?? "",
-    address_et: settings.address_et ?? "",
-    pickup_enabled: settings.pickup_enabled,
-    delivery_enabled: settings.delivery_enabled,
-    stripe_enabled: settings.stripe_enabled,
-    cash_on_pickup_enabled: settings.cash_on_pickup_enabled,
-    card_on_pickup_enabled: settings.card_on_pickup_enabled,
-    min_delivery_time_minutes: settings.min_delivery_time_minutes,
-    max_delivery_time_minutes: settings.max_delivery_time_minutes,
+    restaurant_name: safeSettings.restaurant_name,
+    phone: safeSettings.phone,
+    email: safeSettings.email,
+    address_ru: safeSettings.address_ru,
+    address_en: safeSettings.address_en,
+    address_et: safeSettings.address_et,
+    pickup_enabled: safeSettings.pickup_enabled,
+    delivery_enabled: safeSettings.delivery_enabled,
+    stripe_enabled: safeSettings.stripe_enabled,
+    cash_on_pickup_enabled: safeSettings.cash_on_pickup_enabled,
+    card_on_pickup_enabled: safeSettings.card_on_pickup_enabled,
+    min_delivery_time_minutes: safeSettings.min_delivery_time_minutes,
+    max_delivery_time_minutes: safeSettings.max_delivery_time_minutes,
   });
 
   const [loading, setLoading] = useState(false);
