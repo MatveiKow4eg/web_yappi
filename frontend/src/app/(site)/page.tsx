@@ -20,102 +20,78 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ───────── HERO ───────── */}
-      <section className="relative overflow-hidden">
-        {/* gradient bg */}
-        <div className="absolute inset-0 bg-brand-black">
-          <div className="absolute -top-32 -right-32 w-[700px] h-[700px] bg-brand-red/8 rounded-full blur-[140px]" />
-          <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] bg-brand-red/5 rounded-full blur-[120px]" />
-        </div>
+      {/* ───────── TOP SECTION ───────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-14 sm:pb-16">
+        <div className="relative rounded-[36px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(215,38,56,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_35%)]" />
+          <div className="absolute top-0 right-0 w-72 h-72 bg-brand-red/10 blur-[110px] rounded-full" />
+          <div className="absolute bottom-0 left-12 w-48 h-48 bg-white/5 blur-[90px] rounded-full" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-24 flex flex-col lg:flex-row items-center gap-12">
-          {/* Text side */}
-          <div className="flex-1 text-center lg:text-left">
-            {/* live badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-red/10 border border-brand-red/20 text-brand-red text-sm font-medium mb-6">
-              <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse" />
-              Принимаем заказы · 11:00 — 23:00
-            </div>
-
-            <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-5">
-              Лучшие<br />
-              <span className="text-brand-red">роллы</span> и суши<br />
-              <span className="text-brand-text-muted text-5xl xl:text-6xl">в городе</span>
-            </h1>
-
-            <p className="text-brand-text-muted text-lg max-w-md mx-auto lg:mx-0 mb-8 leading-relaxed">
-              Свежая рыба, авторские рецепты и доставка за 30–60 минут прямо к вашей двери.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <a
-                href="#menu"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-brand-red hover:bg-brand-red-dark transition-colors text-white font-bold text-base"
-              >
-                Заказать сейчас
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </a>
-              <Link
-                href="/cart"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-white/10 bg-brand-gray-mid hover:border-white/25 transition-colors text-white font-semibold text-base"
-              >
-                🛒 Корзина
-              </Link>
-            </div>
-
-            {/* stats */}
-            <div className="flex items-center gap-8 mt-10 justify-center lg:justify-start">
-              {[
-                { value: "30 мин", label: "Доставка" },
-                { value: "50+", label: "Позиций" },
-                { value: "4.9 ★", label: "Рейтинг" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <p className="text-2xl font-black text-white">{s.value}</p>
-                  <p className="text-brand-text-muted text-xs">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Decorative sushi image side */}
-          <div className="flex-1 flex justify-center lg:justify-end">
-            <div className="relative w-72 h-72 sm:w-96 sm:h-96">
-              {/* big glow ring */}
-              <div className="absolute inset-0 rounded-full bg-brand-red/10 blur-2xl" />
-              <div className="absolute inset-4 rounded-full bg-brand-red/8 blur-xl" />
-              {/* central emoji */}
-              <div className="absolute inset-0 flex items-center justify-center text-[10rem] select-none">
-                🍣
+          <div className="relative grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 px-6 sm:px-8 lg:px-10 py-8 sm:py-10 lg:py-12 items-center">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-red/20 bg-brand-red/10 px-3 py-1.5 text-xs font-medium text-brand-red mb-5">
+                <span className="w-2 h-2 rounded-full bg-brand-red" />
+                Открыты сегодня до 23:00
               </div>
-              {/* floating badges */}
-              <div className="absolute top-4 right-0 bg-brand-gray-dark border border-white/10 rounded-2xl px-4 py-2 text-sm font-bold text-white shadow-xl">
-                🔥 Хит продаж
+
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[0.98] max-w-xl">
+                Свежие роллы.
+                <br />
+                Нормальная доставка.
+              </h1>
+
+              <p className="text-brand-text-muted text-base sm:text-lg mt-5 max-w-lg leading-relaxed">
+                Без перегруза. Выбирайте позиции, собирайте заказ и оформляйте за пару минут.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-7">
+                <a
+                  href="#menu"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-brand-red hover:bg-brand-red-dark transition-colors text-white font-semibold"
+                >
+                  Открыть меню
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+                <Link
+                  href="/promotions"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-2xl border border-white/10 bg-white/[0.03] text-white font-semibold hover:bg-white/[0.06] transition-colors"
+                >
+                  Акции и сеты
+                </Link>
               </div>
-              <div className="absolute bottom-8 left-0 bg-brand-red rounded-2xl px-4 py-2 text-sm font-bold text-white shadow-xl">
-                -15% сегодня
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-8 max-w-xl">
+                {[
+                  { value: "30–60", label: "мин доставка" },
+                  { value: "Pickup", label: "самовывоз" },
+                  { value: "Online", label: "оплата" },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 sm:px-4 sm:py-4">
+                    <div className="text-white font-black text-lg sm:text-xl">{item.value}</div>
+                    <div className="text-brand-text-muted text-xs sm:text-sm mt-1">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative min-h-[280px] sm:min-h-[340px] lg:min-h-[420px] flex items-center justify-center">
+              <div className="absolute inset-x-8 inset-y-10 rounded-[32px] border border-white/10 bg-black/25 backdrop-blur-sm" />
+              <div className="absolute top-4 left-0 sm:left-6 rounded-2xl border border-white/10 bg-brand-gray-dark/80 px-4 py-3 shadow-2xl">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-brand-text-muted">today</p>
+                <p className="text-white font-semibold mt-1">Филадельфия, сет 32, лосось</p>
+              </div>
+              <div className="relative w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(215,38,56,0.2),rgba(255,255,255,0.02)_55%,transparent_70%)] flex items-center justify-center shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                <div className="absolute inset-5 rounded-full border border-white/10" />
+                <div className="text-[7rem] sm:text-[9rem] leading-none select-none">🍣</div>
+              </div>
+              <div className="absolute right-0 sm:right-5 bottom-4 rounded-[24px] bg-brand-red text-white px-5 py-4 shadow-[0_20px_50px_rgba(215,38,56,0.35)]">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">быстрый старт</p>
+                <p className="text-xl font-black mt-1">Меню без лишних экранов</p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ───────── PERKS BAR ───────── */}
-      <section className="border-y border-white/5 bg-brand-gray-dark/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { icon: "🚚", label: "Доставка 30–60 мин" },
-            { icon: "✅", label: "Только свежие продукты" },
-            { icon: "🎁", label: "Промокоды каждую неделю" },
-            { icon: "💳", label: "Оплата онлайн или наличными" },
-          ].map((p) => (
-            <div key={p.label} className="flex items-center gap-2 justify-center md:justify-start">
-              <span className="text-2xl">{p.icon}</span>
-              <span className="text-sm text-white font-medium">{p.label}</span>
-            </div>
-          ))}
         </div>
       </section>
 
