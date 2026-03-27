@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import type { RestaurantSettings } from "@prisma/client";
 
 interface Props {
@@ -43,8 +43,59 @@ export default function AdminSettingsForm({ settings }: Props) {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSettings() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/settings`, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await res.json();
+        if (!active) return;
+
+        if (!res.ok || !data.ok || !data.data) {
+          setError("Не удалось загрузить настройки. Проверьте авторизацию администратора.");
+          return;
+        }
+
+        const serverSettings = { ...fallbackSettings, ...data.data };
+        setForm({
+          restaurant_name: serverSettings.restaurant_name,
+          phone: serverSettings.phone ?? "",
+          email: serverSettings.email ?? "",
+          address_ru: serverSettings.address_ru ?? "",
+          address_en: serverSettings.address_en ?? "",
+          address_et: serverSettings.address_et ?? "",
+          pickup_enabled: serverSettings.pickup_enabled,
+          delivery_enabled: serverSettings.delivery_enabled,
+          stripe_enabled: serverSettings.stripe_enabled,
+          cash_on_pickup_enabled: serverSettings.cash_on_pickup_enabled,
+          card_on_pickup_enabled: serverSettings.card_on_pickup_enabled,
+          min_delivery_time_minutes: serverSettings.min_delivery_time_minutes,
+          max_delivery_time_minutes: serverSettings.max_delivery_time_minutes,
+        });
+      } catch {
+        if (!active) return;
+        setError("Не удалось загрузить настройки. Проверьте соединение.");
+      } finally {
+        if (active) setLoadingInitial(false);
+      }
+    }
+
+    loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = e.target;
@@ -110,6 +161,12 @@ export default function AdminSettingsForm({ settings }: Props) {
 
   return (
     <form onSubmit={handleSubmit}>
+      {loadingInitial && (
+        <div className="py-3 px-4 rounded-xl bg-brand-gray-mid border border-white/10 text-sm text-brand-text-muted mb-4">
+          Загружаем текущие настройки...
+        </div>
+      )}
+
       <Section title="Общая информация">
         <div className="space-y-4">
           <Field label="Название ресторана" name="restaurant_name" />
