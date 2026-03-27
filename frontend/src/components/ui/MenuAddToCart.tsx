@@ -63,7 +63,7 @@ export default function MenuAddToCart({
           e.preventDefault();
           addItem({ product_id, name, image_url: resolvedImage, unit_price: price, selections: [] });
         }}
-        className="w-14 h-10 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 flex-shrink-0"
+        className="w-10 h-10 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 flex-shrink-0"
         aria-label="Добавить в корзину"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@ export default function MenuAddToCart({
           e.preventDefault();
           setOpen((v) => !v);
         }}
-        className="w-14 h-10 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90"
+        className="w-10 h-10 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90"
         aria-label="Выбрать размер и добавить в корзину"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
