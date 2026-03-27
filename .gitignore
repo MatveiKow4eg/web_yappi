@@ -1,1 +1,10 @@
 node_modules
+
+# Environment files must live only on local/dev machines or directly on servers.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!frontend/.env.example
+!backend/.env.example
