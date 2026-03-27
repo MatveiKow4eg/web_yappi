@@ -21,7 +21,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-tenor)", "sans-serif"],
+        sans: ["var(--font-manrope)", "sans-serif"],
       },
     },
   },

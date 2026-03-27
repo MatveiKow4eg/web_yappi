@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  --font-tenor: 'Tenor Sans', sans-serif;
+  --font-manrope: 'Manrope', sans-serif;
 }
 
 @layer base {

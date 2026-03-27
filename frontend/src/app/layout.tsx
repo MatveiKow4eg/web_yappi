@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { Tenor_Sans } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const tenorSans = Tenor_Sans({
+const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
-  weight: ["400"],
-  variable: "--font-tenor",
+  variable: "--font-manrope",
   display: "swap",
 });
 
@@ -25,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" className={tenorSans.variable}>
+    <html lang="ru" className={manrope.variable}>
       <body className="bg-brand-black text-white font-sans antialiased min-h-screen">
         {children}
       </body>
