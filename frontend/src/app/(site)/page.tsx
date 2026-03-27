@@ -102,7 +102,7 @@ export default async function HomePage() {
       </section>
 
       {/* ───────── MENU ───────── */}
-      <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-16">
+      <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-16">
         <div className="mb-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-black text-white">Меню</h2>
         </div>
@@ -127,7 +127,7 @@ export default async function HomePage() {
             </div>
 
             {/* Product cards placeholder */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
               {[
                 { name: "Калифорния", desc: "Краб, авокадо, огурец, тобико", price: "8.90", emoji: "🦀" },
                 { name: "Филадельфия", desc: "Лосось, сливочный сыр, огурец", price: "9.50", emoji: "🐟" },
@@ -168,77 +168,96 @@ export default async function HomePage() {
           </div>
         ) : (
           // Real data from DB
-          <div className="space-y-12">
-            {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
-              <div key={cat.id}>
-                <div className="mb-5">
-                  <h3 className="text-xl font-bold text-white">{cat.name_ru}</h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {[...cat.products].sort((a: any, b: any) => {
-                    const na = a.image_url ? parseInt(a.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
-                    const nb = b.image_url ? parseInt(b.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
-                    return na - nb;
-                  }).map((p: any) => (
-                    <div
-                      key={p.id}
-                      className="rounded-2xl block overflow-hidden h-full flex flex-col"
+          <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+            <aside className="hidden lg:block">
+              <div className="sticky top-28 rounded-2xl border border-white/10 bg-brand-gray-dark/60 p-4">
+                <p className="text-sm font-semibold text-white mb-3">Категории</p>
+                <nav className="space-y-1">
+                  {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
+                    <a
+                      key={cat.id}
+                      href={`#home-cat-${cat.slug ?? cat.id}`}
+                      className="block rounded-lg px-3 py-2 text-sm text-brand-text-muted hover:text-white hover:bg-white/5 transition-colors"
                     >
-                      <div className="aspect-square relative">
-                        <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
-                        <HideOnErrorImage
-                          src={resolveProductImageSrc(p.image_url) ?? ""}
-                          alt={p.name_ru}
-                          className="absolute inset-0 w-full h-full object-contain"
-                        />
-                        {!p.is_available && (
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <span className="text-sm font-semibold text-white bg-brand-red px-3 py-1 rounded-full">Нет в наличии</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 flex flex-col flex-1">
-                        <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
-                          {p.image_url && (
-                            <span className="text-brand-red mr-1">{`${p.image_url.replace(/^#\s*/, "").trim()}.`}</span>
-                          )}
-                          {p.name_ru}
-                        </p>
-                        <div className="mt-auto flex items-end justify-between gap-2">
-                          <div className="min-w-0">
-                            <span className="text-white font-black">
-                              {parseFloat(p.base_price.toString()).toFixed(2)} €
-                            </span>
-                            {([p.pieces_total, p.variant1_pieces, p.variant2_pieces]
-                              .filter((v: any) => typeof v === "number" && v > 0)
-                              .length > 0) && (
-                              <span className="text-brand-text-muted text-xs ml-2 align-middle">
-                                {[p.pieces_total, p.variant1_pieces, p.variant2_pieces]
-                                  .filter((v: any) => typeof v === "number" && v > 0)
-                                  .join("/")} шт
-                              </span>
-                            )}
-                          </div>
-                          {p.is_available && (
-                            <MenuAddToCart
-                              product_id={p.id}
-                              name={p.name_ru}
-                              image_url={resolveProductImageSrc(p.image_url) ?? undefined}
-                              price={parseFloat(p.base_price.toString())}
-                              pieces_total={p.pieces_total ?? null}
-                              variant1_pieces={p.variant1_pieces ?? null}
-                              variant1_price={p.variant1_price ? parseFloat(p.variant1_price.toString()) : null}
-                              variant2_pieces={p.variant2_pieces ?? null}
-                              variant2_price={p.variant2_price ? parseFloat(p.variant2_price.toString()) : null}
-                            />
+                      {cat.name_ru}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            </aside>
+
+            <div className="space-y-12">
+              {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
+                <div key={cat.id} id={`home-cat-${cat.slug ?? cat.id}`}>
+                  <div className="mb-5">
+                    <h3 className="text-xl font-bold text-white">{cat.name_ru}</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
+                    {[...cat.products].sort((a: any, b: any) => {
+                      const na = a.image_url ? parseInt(a.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
+                      const nb = b.image_url ? parseInt(b.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
+                      return na - nb;
+                    }).map((p: any) => (
+                      <div
+                        key={p.id}
+                        className="rounded-2xl block overflow-hidden h-full flex flex-col"
+                      >
+                        <div className="aspect-square relative">
+                          <div className="absolute inset-0 flex items-center justify-center text-4xl">🍱</div>
+                          <HideOnErrorImage
+                            src={resolveProductImageSrc(p.image_url) ?? ""}
+                            alt={p.name_ru}
+                            className="absolute inset-0 w-full h-full object-contain"
+                          />
+                          {!p.is_available && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-white bg-brand-red px-3 py-1 rounded-full">Нет в наличии</span>
+                            </div>
                           )}
                         </div>
+                        <div className="p-3 flex flex-col flex-1">
+                          <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
+                            {p.image_url && (
+                              <span className="text-brand-red mr-1">{`${p.image_url.replace(/^#\s*/, "").trim()}.`}</span>
+                            )}
+                            {p.name_ru}
+                          </p>
+                          <div className="mt-auto flex items-end justify-between gap-2">
+                            <div className="min-w-0">
+                              <span className="text-white font-black">
+                                {parseFloat(p.base_price.toString()).toFixed(2)} €
+                              </span>
+                              {([p.pieces_total, p.variant1_pieces, p.variant2_pieces]
+                                .filter((v: any) => typeof v === "number" && v > 0)
+                                .length > 0) && (
+                                <span className="text-brand-text-muted text-xs ml-2 align-middle">
+                                  {[p.pieces_total, p.variant1_pieces, p.variant2_pieces]
+                                    .filter((v: any) => typeof v === "number" && v > 0)
+                                    .join("/")} шт
+                                </span>
+                              )}
+                            </div>
+                            {p.is_available && (
+                              <MenuAddToCart
+                                product_id={p.id}
+                                name={p.name_ru}
+                                image_url={resolveProductImageSrc(p.image_url) ?? undefined}
+                                price={parseFloat(p.base_price.toString())}
+                                pieces_total={p.pieces_total ?? null}
+                                variant1_pieces={p.variant1_pieces ?? null}
+                                variant1_price={p.variant1_price ? parseFloat(p.variant1_price.toString()) : null}
+                                variant2_pieces={p.variant2_pieces ?? null}
+                                variant2_price={p.variant2_price ? parseFloat(p.variant2_price.toString()) : null}
+                              />
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
