@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
 
@@ -17,7 +17,6 @@ const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { items, subtotal, clearCart } = useCart();
 
   const [type, setType] = useState<OrderType>("delivery");
@@ -116,13 +115,15 @@ export default function CheckoutPage() {
   ]);
 
   useEffect(() => {
-    if (searchParams.get("cancelled") === "1") {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("cancelled") === "1") {
       setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
       setPayment("stripe");
     } else {
       setStripeNotice(null);
     }
-  }, [searchParams]);
+  }, []);
 
   async function applyPromo() {
     if (!promoCode.trim()) return;
