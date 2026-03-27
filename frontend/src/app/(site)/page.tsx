@@ -67,15 +67,16 @@ export default async function HomePage() {
             </div>
 
             <div className="relative lg:pl-4">
-              <div className="relative rounded-[28px] overflow-hidden bg-black/35 min-h-[280px] sm:min-h-[360px] lg:min-h-[440px]">
+              <div className="relative rounded-[28px] overflow-hidden min-h-[280px] sm:min-h-[360px] lg:min-h-[440px]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(215,38,56,0.2),rgba(255,255,255,0.02)_45%,transparent_72%)]" />
                 <Image
                   src="/images/sushi/115.png"
                   alt="Сет суши"
                   fill
-                  className="object-cover"
+                  className="object-contain drop-shadow-[0_30px_55px_rgba(0,0,0,0.55)]"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/25 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
 
                 <div className="absolute top-4 left-4 rounded-full bg-brand-red text-white text-xs font-semibold px-3 py-1.5 border border-white/20">
                   от 30 мин
