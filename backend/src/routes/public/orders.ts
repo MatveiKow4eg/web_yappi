@@ -410,7 +410,15 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
 
     // ─── Stripe Checkout ────────────────────────────────────────
     if (body.payment_method === "stripe") {
-      const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+      const configuredBaseUrl = process.env.BASE_URL?.trim();
+      const requestOrigin = typeof req.headers.origin === "string" ? req.headers.origin.trim() : "";
+      const baseUrl = configuredBaseUrl || requestOrigin;
+
+      if (!baseUrl) {
+        req.log.error("Stripe checkout: BASE_URL is missing and request origin is unavailable");
+        return err(reply, "Не настроен публичный URL фронтенда для Stripe редиректа", 500);
+      }
+
       const stripe = getStripe();
 
       // Build line items from already-resolved server-side prices.
