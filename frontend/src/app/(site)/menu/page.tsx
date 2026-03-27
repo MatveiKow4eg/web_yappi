@@ -65,6 +65,15 @@ export default async function MenuPage() {
                       <span className="text-brand-red font-bold">
                         {parseFloat(p.base_price.toString()).toFixed(2)} €
                       </span>
+                      {([p.pieces_total, p.variant1_pieces, p.variant2_pieces]
+                        .filter((v: any) => typeof v === "number" && v > 0)
+                        .length > 0) && (
+                        <span className="text-brand-text-muted text-xs ml-2">
+                          {[p.pieces_total, p.variant1_pieces, p.variant2_pieces]
+                            .filter((v: any) => typeof v === "number" && v > 0)
+                            .join("/")} шт
+                        </span>
+                      )}
                     </div>
                   </div>
                   {p.is_available && (

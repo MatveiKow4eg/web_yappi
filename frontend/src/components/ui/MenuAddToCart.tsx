@@ -89,21 +89,39 @@ export default function MenuAddToCart({
       </button>
 
       {open && (
-        <div className="mt-2 rounded-xl bg-brand-gray-dark border border-white/10 shadow-xl overflow-hidden">
-          <div className="px-3 py-2 border-b border-white/10 text-xs font-semibold text-brand-text-muted">
-            Добавить в корзину
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60"
+            onClick={(e) => {
+              e.preventDefault();
+              setOpen(false);
+            }}
+            aria-label="Закрыть выбор варианта"
+          />
+
+          <div className="relative w-full max-w-sm rounded-2xl bg-brand-gray-dark border border-white/10 shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 text-sm font-semibold text-white">
+              Добавить в корзину
+            </div>
+
+            <div className="p-2">
+              {options.map((opt) => (
+                <button
+                  key={opt.mode}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addOption(opt);
+                  }}
+                  className="w-full flex items-center justify-between gap-4 px-3 py-3 rounded-xl text-sm hover:bg-brand-gray-mid transition-colors text-left"
+                >
+                  <span className="text-white font-semibold min-w-[54px]">{opt.label}</span>
+                  <span className="text-brand-red font-black whitespace-nowrap">{opt.unit_price.toFixed(2)} €</span>
+                  <span className="text-xs text-brand-text-muted">Выбрать</span>
+                </button>
+              ))}
+            </div>
           </div>
-          {options.map((opt) => (
-            <button
-              key={opt.mode}
-              onClick={(e) => { e.preventDefault(); addOption(opt); }}
-              className="w-full flex items-center justify-between gap-4 px-3 py-2.5 text-sm hover:bg-brand-gray-mid transition-colors text-left"
-            >
-              <span className="text-white font-semibold min-w-[54px]">{opt.label}</span>
-              <span className="text-brand-red font-black whitespace-nowrap">{opt.unit_price.toFixed(2)} €</span>
-              <span className="text-xs text-brand-text-muted">Выбрать</span>
-            </button>
-          ))}
         </div>
       )}
     </div>

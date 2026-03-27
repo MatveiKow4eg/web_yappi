@@ -226,9 +226,13 @@ export default async function HomePage() {
                             <span className="text-brand-red font-black">
                               {parseFloat(p.base_price.toString()).toFixed(2)} €
                             </span>
-                            {p.pieces_total && (
+                            {([p.pieces_total, p.variant1_pieces, p.variant2_pieces]
+                              .filter((v: any) => typeof v === "number" && v > 0)
+                              .length > 0) && (
                               <span className="text-brand-text-muted text-xs ml-2 align-middle">
-                                {p.pieces_total} шт
+                                {[p.pieces_total, p.variant1_pieces, p.variant2_pieces]
+                                  .filter((v: any) => typeof v === "number" && v > 0)
+                                  .join("/")} шт
                               </span>
                             )}
                           </div>
