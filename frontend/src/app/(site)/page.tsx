@@ -22,11 +22,11 @@ export default async function HomePage() {
   return (
     <>
       {/* ───────── HERO ───────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-10 sm:pb-12">
-        <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-gradient-to-br from-[#171717] via-[#111111] to-[#0d0d0d]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(215,38,56,0.18),transparent_38%)]" />
+      <section className="relative overflow-hidden pt-6 sm:pt-8 pb-10 sm:pb-12">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_18%,rgba(215,38,56,0.2),transparent_38%),linear-gradient(90deg,rgba(13,13,13,0),rgba(17,17,17,0.75)_20%,rgba(17,17,17,0.75)_80%,rgba(13,13,13,0))]" />
 
-          <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-10 items-center p-6 sm:p-8 lg:p-10">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center py-2 sm:py-4">
             <div>
               <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[1.02] max-w-xl">
                 Свежие суши с доставкой в Tallinn
@@ -60,7 +60,7 @@ export default async function HomePage() {
             </div>
 
             <div className="relative lg:pl-4">
-              <div className="relative rounded-[28px] overflow-hidden border border-white/10 bg-black/40 min-h-[280px] sm:min-h-[360px] lg:min-h-[440px]">
+              <div className="relative rounded-[28px] overflow-hidden bg-black/35 min-h-[280px] sm:min-h-[360px] lg:min-h-[440px]">
                 <Image
                   src="/images/sushi/115.png"
                   alt="Сет суши"
