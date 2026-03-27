@@ -63,7 +63,12 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
     for (const item of body.items) {
       const product = await prisma.product.findUnique({
         where: { id: item.product_id },
-        include: {
+        select: {
+          id: true,
+          name_ru: true,
+          is_active: true,
+          is_available: true,
+          base_price: true,
           variants: true,
           option_links: { include: { option_group: { include: { items: true } } } },
         },

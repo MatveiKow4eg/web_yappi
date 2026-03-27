@@ -29,6 +29,10 @@ const ProductSchema = zod_1.z.object({
     is_available: zod_1.z.boolean().optional().default(true),
     sort_order: zod_1.z.number().int().optional().default(0),
     sku: zod_1.z.string().optional(),
+    pieces_total: zod_1.z.number().int().positive().optional(),
+    allow_half_half: zod_1.z.boolean().optional(),
+    half_half_price: zod_1.z.number().positive().optional(),
+    half_half_old_price: zod_1.z.number().positive().optional(),
 });
 const UpdateSchema = ProductSchema.partial();
 async function adminProductsRoutes(app) {
@@ -44,7 +48,29 @@ async function adminProductsRoutes(app) {
                 orderBy: [{ category: { sort_order: "asc" } }, { sort_order: "asc" }],
                 skip: (parseInt(page) - 1) * parseInt(limit),
                 take: parseInt(limit),
-                include: { category: { select: { name_ru: true, slug: true } } },
+                select: {
+                    id: true,
+                    category_id: true,
+                    slug: true,
+                    name_ru: true,
+                    name_en: true,
+                    name_et: true,
+                    description_ru: true,
+                    description_en: true,
+                    description_et: true,
+                    image_url: true,
+                    base_price: true,
+                    old_price: true,
+                    is_active: true,
+                    is_hidden: true,
+                    is_available: true,
+                    is_combo: true,
+                    sku: true,
+                    sort_order: true,
+                    created_at: true,
+                    updated_at: true,
+                    category: { select: { name_ru: true, slug: true } },
+                },
             }),
             prisma_1.prisma.product.count({ where: category ? { category: { slug: category } } : {} }),
         ]);
@@ -57,7 +83,29 @@ async function adminProductsRoutes(app) {
             return;
         const product = await prisma_1.prisma.product.findUnique({
             where: { id: req.params.id },
-            include: { category: { select: { id: true, name_ru: true, slug: true } } },
+            select: {
+                id: true,
+                category_id: true,
+                slug: true,
+                name_ru: true,
+                name_en: true,
+                name_et: true,
+                description_ru: true,
+                description_en: true,
+                description_et: true,
+                image_url: true,
+                base_price: true,
+                old_price: true,
+                is_active: true,
+                is_hidden: true,
+                is_available: true,
+                is_combo: true,
+                sku: true,
+                sort_order: true,
+                created_at: true,
+                updated_at: true,
+                category: { select: { id: true, name_ru: true, slug: true } },
+            },
         });
         if (!product)
             return (0, session_1.err)(reply, "Товар не найден", 404);
@@ -71,7 +119,7 @@ async function adminProductsRoutes(app) {
         const parsed = ProductSchema.safeParse(req.body);
         if (!parsed.success)
             return (0, session_1.err)(reply, parsed.error.message);
-        const existing = await prisma_1.prisma.product.findUnique({ where: { slug: parsed.data.slug } });
+        const existing = await prisma_1.prisma.product.findUnique({ where: { slug: parsed.data.slug }, select: { id: true } });
         if (existing)
             return (0, session_1.err)(reply, "Товар с таким slug уже существует", 422);
         const product = await prisma_1.prisma.product.create({ data: parsed.data });

@@ -34,7 +34,7 @@ const ProductSchema = z.object({
   sort_order: z.number().int().optional().default(0),
   sku: z.string().optional(),
   pieces_total: z.number().int().positive().optional(),
-  allow_half_half: z.boolean().optional().default(false),
+  allow_half_half: z.boolean().optional(),
   half_half_price: z.number().positive().optional(),
   half_half_old_price: z.number().positive().optional(),
 });
@@ -56,7 +56,29 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
           orderBy: [{ category: { sort_order: "asc" } }, { sort_order: "asc" }],
           skip: (parseInt(page) - 1) * parseInt(limit),
           take: parseInt(limit),
-          include: { category: { select: { name_ru: true, slug: true } } },
+          select: {
+            id: true,
+            category_id: true,
+            slug: true,
+            name_ru: true,
+            name_en: true,
+            name_et: true,
+            description_ru: true,
+            description_en: true,
+            description_et: true,
+            image_url: true,
+            base_price: true,
+            old_price: true,
+            is_active: true,
+            is_hidden: true,
+            is_available: true,
+            is_combo: true,
+            sku: true,
+            sort_order: true,
+            created_at: true,
+            updated_at: true,
+            category: { select: { name_ru: true, slug: true } },
+          },
         }),
         prisma.product.count({ where: category ? { category: { slug: category } } : {} }),
       ]);
@@ -71,7 +93,29 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
 
     const product = await prisma.product.findUnique({
       where: { id: req.params.id },
-      include: { category: { select: { id: true, name_ru: true, slug: true } } },
+      select: {
+        id: true,
+        category_id: true,
+        slug: true,
+        name_ru: true,
+        name_en: true,
+        name_et: true,
+        description_ru: true,
+        description_en: true,
+        description_et: true,
+        image_url: true,
+        base_price: true,
+        old_price: true,
+        is_active: true,
+        is_hidden: true,
+        is_available: true,
+        is_combo: true,
+        sku: true,
+        sort_order: true,
+        created_at: true,
+        updated_at: true,
+        category: { select: { id: true, name_ru: true, slug: true } },
+      },
     });
 
     if (!product) return err(reply, "Товар не найден", 404);
@@ -86,7 +130,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
     const parsed = ProductSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
 
-    const existing = await prisma.product.findUnique({ where: { slug: parsed.data.slug } });
+    const existing = await prisma.product.findUnique({ where: { slug: parsed.data.slug }, select: { id: true } });
     if (existing) return err(reply, "Товар с таким slug уже существует", 422);
 
     const product = await prisma.product.create({ data: parsed.data as Parameters<typeof prisma.product.create>[0]["data"] });
