@@ -44,13 +44,12 @@ jobs:
           script: |
             cd /var/www/yappi-sushi/backend
 
-            npm install
+            if [ ! -f .env ]; then
+              echo "ERROR: /var/www/yappi-sushi/backend/.env not found. Create it manually on the server before deploy."
+              exit 1
+            fi
 
-            echo "DATABASE_URL=\"${{ secrets.DATABASE_URL }}\"" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "PORT=4000" >> .env
-            echo "NODE_ENV=production" >> .env
-            echo "ALLOWED_ORIGINS=https://yappisushi.ee,https://www.yappisushi.ee" >> .env
+            npm install
 
             npx prisma generate
             npx prisma migrate deploy
