@@ -272,6 +272,7 @@ model Order {
   created_at       DateTime        @default(now())
   updated_at       DateTime        @updatedAt
   stripe_session_id String?         @unique
+  checkout_fingerprint String?
   confirmed_at     DateTime?
   ready_at         DateTime?
   sent_at          DateTime?
@@ -282,6 +283,8 @@ model Order {
   promo_code    PromoCode?   @relation(fields: [promo_code_id], references: [id])
   delivery_zone DeliveryZone? @relation(fields: [delivery_zone_id], references: [id])
   promo_usage   PromoCodeUsage?
+
+  @@index([checkout_fingerprint, created_at])
 }
 
 model OrderItem {

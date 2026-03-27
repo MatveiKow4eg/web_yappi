@@ -4,11 +4,59 @@ import { ok, err } from "../../lib/session";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import Stripe from "stripe";
+import { createHash } from "crypto";
+
+const STRIPE_ORDER_REUSE_WINDOW_MS = 30 * 60 * 1000;
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
   return new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
+}
+
+function buildCheckoutFingerprint(input: {
+  type: "delivery" | "pickup";
+  payment_method: "stripe" | "cash_on_pickup" | "card_on_pickup" | "cash_on_delivery" | "card_on_delivery";
+  customer_name: string;
+  customer_phone: string;
+  address_line?: string;
+  apartment?: string;
+  entrance?: string;
+  floor?: string;
+  door_code?: string;
+  comment?: string;
+  promo_code?: string;
+  language_code: "ru" | "en" | "et";
+  delivery_zone_id?: string;
+  total_amount: number;
+  items: Array<{
+    product_id: string;
+    product_variant_id?: string;
+    quantity: number;
+    selections: Array<{
+      option_item_id: string;
+      quantity: number;
+    }>;
+  }>;
+}): string {
+  const normalized = {
+    ...input,
+    promo_code: input.promo_code?.toUpperCase() ?? null,
+    items: input.items
+      .map((item) => ({
+        ...item,
+        product_variant_id: item.product_variant_id ?? null,
+        selections: item.selections
+          .map((selection) => ({
+            option_item_id: selection.option_item_id,
+            quantity: selection.quantity,
+          }))
+          .sort((a, b) => `${a.option_item_id}:${a.quantity}`.localeCompare(`${b.option_item_id}:${b.quantity}`)),
+      }))
+      .sort((a, b) => `${a.product_id}:${a.product_variant_id ?? ""}`.localeCompare(`${b.product_id}:${b.product_variant_id ?? ""}`)),
+  };
+
+  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
 }
 
 const OrderSchema = z.object({
@@ -212,6 +260,87 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       return err(reply, "Онлайн-оплата недоступна для заказа с нулевой суммой", 422);
     }
 
+    // ─── Compute checkout fingerprint for ALL payment methods ────────────────
+    // This detects duplicate orders within 30 minutes regardless of payment method.
+    const checkoutFingerprint = buildCheckoutFingerprint({
+      type: body.type,
+      payment_method: body.payment_method,
+      customer_name: body.customer_name,
+      customer_phone: body.customer_phone,
+      address_line: body.address_line,
+      apartment: body.apartment,
+      entrance: body.entrance,
+      floor: body.floor,
+      door_code: body.door_code,
+      comment: body.comment,
+      promo_code: body.promo_code,
+      language_code: body.language_code,
+      delivery_zone_id: body.delivery_zone_id,
+      total_amount: totalAmount,
+      items: body.items,
+    });
+
+    // ─── Check for duplicate orders (applies to ALL payment methods) ──────────
+    // Prevents accidental duplicate orders from API retries within 30 minutes.
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        payment_method: body.payment_method,
+        payment_status: "pending",
+        status: { not: "cancelled" },
+        checkout_fingerprint: checkoutFingerprint,
+        created_at: { gte: new Date(Date.now() - STRIPE_ORDER_REUSE_WINDOW_MS) },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    // ─── Stripe-specific session handling ────────────────────────────────────
+    if (body.payment_method === "stripe" && existingOrder?.stripe_session_id) {
+      const stripe = getStripe();
+      const existingSession = await stripe.checkout.sessions.retrieve(existingOrder.stripe_session_id);
+
+      if (existingSession.status === "open" && existingSession.payment_status === "unpaid" && existingSession.url) {
+        return reply.code(200).send({
+          ok: true,
+          data: {
+            order_number: existingOrder.order_number,
+            tracking_token: existingOrder.tracking_token,
+            total_amount: parseFloat(existingOrder.total_amount.toString()),
+            stripe_checkout_url: existingSession.url,
+          },
+        });
+      }
+
+      if (existingSession.status === "complete" && existingSession.payment_status === "paid") {
+        return reply.code(200).send({
+          ok: true,
+          data: {
+            order_number: existingOrder.order_number,
+            tracking_token: existingOrder.tracking_token,
+            total_amount: parseFloat(existingOrder.total_amount.toString()),
+          },
+        });
+      }
+
+      if (existingSession.status === "expired") {
+        await prisma.order.update({
+          where: { id: existingOrder.id },
+          data: { payment_status: "failed" },
+        });
+      }
+    }
+
+    // ─── Non-Stripe duplicate: return existing pending order ──────────────────
+    if (body.payment_method !== "stripe" && existingOrder) {
+      return reply.code(200).send({
+        ok: true,
+        data: {
+          order_number: existingOrder.order_number,
+          tracking_token: existingOrder.tracking_token,
+          total_amount: parseFloat(existingOrder.total_amount.toString()),
+        },
+      });
+    }
+
     const orderNumber = `YS-${Date.now().toString(36).toUpperCase()}`;
     const trackingToken = uuidv4();
 
@@ -239,6 +368,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         currency: "EUR",
         promo_code_id: promoCodeId,
         delivery_zone_id: zoneId,
+        checkout_fingerprint: checkoutFingerprint,
         items: {
           create: resolvedItems.map((item) => ({
             product_id: item.product_id,
@@ -328,7 +458,9 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
           sessionParams.discounts = [{ coupon: coupon.id }];
         }
 
-        const session = await stripe.checkout.sessions.create(sessionParams);
+        const session = await stripe.checkout.sessions.create(sessionParams, {
+          idempotencyKey: `order_${order.id}`,
+        });
 
         // Persist session id so webhook can resolve the order by orderId from metadata.
         await prisma.order.update({

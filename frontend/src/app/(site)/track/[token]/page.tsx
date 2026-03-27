@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AppApi } from "@/lib/api-client";
+import TrackClientState from "./TrackClientState";
 
 export const metadata: Metadata = {
   title: "Отслеживание заказа",
@@ -24,30 +25,62 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "badge-gray",
 };
 
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "⏳ Ожидание",
+  paid: "✅ Оплачено",
+  failed: "❌ Не оплачено",
+};
+
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending: "badge-amber",
+  paid: "badge-green",
+  failed: "badge-red",
+};
+
 interface Props {
   params: { token: string };
+  searchParams?: { paid?: string | string[] };
 }
 
-export default async function TrackPage({ params }: Props) {
+export default async function TrackPage({ params, searchParams }: Props) {
   const order = await AppApi.orders.track(params.token).catch(() => null);
 
   if (!order) notFound();
 
+  const paidParam = Array.isArray(searchParams?.paid)
+    ? searchParams?.paid[0]
+    : searchParams?.paid;
+  const returnedFromPaidStripe = paidParam === "1";
   const label = STATUS_LABELS[order.status] ?? order.status;
   const colorClass = STATUS_COLORS[order.status] ?? "badge-gray";
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
+      <TrackClientState paid={returnedFromPaidStripe} />
+
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white mb-1">Статус заказа</h1>
         <p className="text-brand-text-muted">Заказ #{order.order_number}</p>
       </div>
 
+      {returnedFromPaidStripe && (
+        <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          Оплата в Stripe завершена. Если статус оплаты ещё не обновился, подождите несколько секунд: заказ станет paid только после подтверждённого webhook от Stripe.
+        </div>
+      )}
+
       {/* Status card */}
       <div className="card p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-brand-text-muted">Текущий статус</span>
+          <span className="text-sm text-brand-text-muted">Статус заказа</span>
           <span className={colorClass}>{label}</span>
+        </div>
+
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
+          <span className="text-sm text-brand-text-muted">Статус оплаты</span>
+          <span className={PAYMENT_STATUS_COLORS[order.payment_status] ?? "badge-gray"}>
+            {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status}
+          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm">

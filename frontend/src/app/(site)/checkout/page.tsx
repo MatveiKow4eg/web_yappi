@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
 
@@ -13,8 +13,11 @@ type PaymentMethod =
   | "cash_on_delivery"
   | "card_on_delivery";
 
+const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
+
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items, subtotal, clearCart } = useCart();
 
   const [type, setType] = useState<OrderType>("delivery");
@@ -36,6 +39,90 @@ export default function CheckoutPage() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stripeNotice, setStripeNotice] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+      if (!raw) {
+        setDraftReady(true);
+        return;
+      }
+
+      const draft = JSON.parse(raw) as {
+        type?: OrderType;
+        payment?: PaymentMethod;
+        name?: string;
+        phone?: string;
+        address?: string;
+        apartment?: string;
+        entrance?: string;
+        floor?: string;
+        doorCode?: string;
+        comment?: string;
+        promoCode?: string;
+      };
+
+      if (draft.type) setType(draft.type);
+      if (draft.payment) setPayment(draft.payment);
+      if (draft.name) setName(draft.name);
+      if (draft.phone) setPhone(draft.phone);
+      if (draft.address) setAddress(draft.address);
+      if (draft.apartment) setApartment(draft.apartment);
+      if (draft.entrance) setEntrance(draft.entrance);
+      if (draft.floor) setFloor(draft.floor);
+      if (draft.doorCode) setDoorCode(draft.doorCode);
+      if (draft.comment) setComment(draft.comment);
+      if (draft.promoCode) setPromoCode(draft.promoCode);
+    } catch {
+      sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+    } finally {
+      setDraftReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+
+    const draft = {
+      type,
+      payment,
+      name,
+      phone,
+      address,
+      apartment,
+      entrance,
+      floor,
+      doorCode,
+      comment,
+      promoCode,
+    };
+
+    sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+  }, [
+    address,
+    apartment,
+    comment,
+    doorCode,
+    draftReady,
+    entrance,
+    floor,
+    name,
+    payment,
+    phone,
+    promoCode,
+    type,
+  ]);
+
+  useEffect(() => {
+    if (searchParams.get("cancelled") === "1") {
+      setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
+      setPayment("stripe");
+    } else {
+      setStripeNotice(null);
+    }
+  }, [searchParams]);
 
   async function applyPromo() {
     if (!promoCode.trim()) return;
@@ -56,6 +143,10 @@ export default function CheckoutPage() {
     } finally {
       setPromoLoading(false);
     }
+  }
+
+  if (!draftReady) {
+    return null;
   }
 
   if (items.length === 0) {
@@ -82,6 +173,7 @@ export default function CheckoutPage() {
       return;
     }
     setError(null);
+    setStripeNotice(null);
     setLoading(true);
 
     try {
@@ -117,12 +209,13 @@ export default function CheckoutPage() {
       if (!data.ok) {
         setError(data.error ?? "Ошибка при оформлении заказа");
       } else {
-        clearCart();
         if (data.data.stripe_checkout_url) {
-          // Stripe Checkout: hard redirect to Stripe hosted page.
-          // ⚠️  Do NOT use router.push — Next.js router doesn't follow external URLs.
+          // Keep cart and draft until Stripe actually confirms payment.
+          // This lets the user return from cancel_url without losing the checkout state.
           window.location.href = data.data.stripe_checkout_url;
         } else {
+          clearCart();
+          sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
           router.push(`/track/${data.data.tracking_token}`);
         }
       }
@@ -149,6 +242,12 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="text-4xl font-black text-white mb-8">Оформление заказа</h1>
+
+      {stripeNotice && (
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          {stripeNotice}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
