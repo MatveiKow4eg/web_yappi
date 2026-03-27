@@ -116,8 +116,10 @@ export default function MenuAddToCart({
                   className="w-full flex items-center justify-between gap-4 px-3 py-3 rounded-xl text-sm hover:bg-brand-gray-mid transition-colors text-left"
                 >
                   <span className="text-white font-semibold min-w-[54px]">{opt.label}</span>
-                  <span className="text-brand-red font-black whitespace-nowrap">{opt.unit_price.toFixed(2)} €</span>
-                  <span className="text-xs text-brand-text-muted">Выбрать</span>
+                  <span className="text-white font-black whitespace-nowrap">{opt.unit_price.toFixed(2)} €</span>
+                  <span className="rounded-md bg-brand-red px-3 py-1 text-xs font-semibold text-white">
+                    Выбрать
+                  </span>
                 </button>
               ))}
             </div>
