@@ -184,12 +184,13 @@ model PromoCode {
 model PromoCodeUsage {
   id              String   @id @default(cuid())
   promo_code_id   String
-  order_id        String?
+  order_id        String?  @unique
   phone           String
   discount_amount Decimal  @db.Decimal(10, 2)
   used_at         DateTime @default(now())
 
   promo_code PromoCode @relation(fields: [promo_code_id], references: [id])
+  order      Order?    @relation(fields: [order_id], references: [id])
 }
 
 // ─────────────────────── BANNERS ────────────────────────────
@@ -270,6 +271,7 @@ model Order {
   cancel_reason    String?
   created_at       DateTime        @default(now())
   updated_at       DateTime        @updatedAt
+  stripe_session_id String?         @unique
   confirmed_at     DateTime?
   ready_at         DateTime?
   sent_at          DateTime?
@@ -279,6 +281,7 @@ model Order {
   items         OrderItem[]
   promo_code    PromoCode?   @relation(fields: [promo_code_id], references: [id])
   delivery_zone DeliveryZone? @relation(fields: [delivery_zone_id], references: [id])
+  promo_usage   PromoCodeUsage?
 }
 
 model OrderItem {

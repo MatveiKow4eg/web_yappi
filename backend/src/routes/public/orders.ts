@@ -3,6 +3,13 @@ import { prisma } from "../../lib/prisma";
 import { ok, err } from "../../lib/session";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
+import Stripe from "stripe";
+
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
+  return new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
+}
 
 const OrderSchema = z.object({
   type: z.enum(["delivery", "pickup"]),
@@ -198,6 +205,13 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
     }
 
     const totalAmount = Math.max(0, subtotal + deliveryFee - discountAmount);
+
+    // Stripe Checkout does not support zero-amount payment sessions.
+    // Force such orders to use a non-Stripe payment method instead of creating a broken flow.
+    if (body.payment_method === "stripe" && totalAmount <= 0) {
+      return err(reply, "Онлайн-оплата недоступна для заказа с нулевой суммой", 422);
+    }
+
     const orderNumber = `YS-${Date.now().toString(36).toUpperCase()}`;
     const trackingToken = uuidv4();
 
@@ -240,7 +254,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       },
     });
 
-    if (promoCodeId) {
+    if (promoCodeId && body.payment_method !== "stripe") {
       await prisma.promoCodeUsage.create({
         data: {
           promo_code_id: promoCodeId,
@@ -251,6 +265,104 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       });
     }
 
+    // ─── Stripe Checkout ────────────────────────────────────────
+    if (body.payment_method === "stripe") {
+      // Guard: check stripe is enabled in restaurant settings
+      const settings = await prisma.restaurantSettings.findFirst({
+        select: { stripe_enabled: true },
+      });
+      if (!settings?.stripe_enabled) {
+        // Order was already created — cancel it so it doesn't stay orphaned
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: "cancelled", cancel_reason: "Stripe недоступен" },
+        });
+        return err(reply, "Онлайн-оплата временно недоступна", 422);
+      }
+
+      const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+      const stripe = getStripe();
+
+      // Build line items from already-resolved server-side prices.
+      // unit_price already includes all option/selection deltas — safe to use directly.
+      const stripeLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
+        resolvedItems.map((item) => ({
+          price_data: {
+            currency: "eur",
+            unit_amount: Math.round(item.unit_price * 100),
+            product_data: { name: item.product_name_snapshot },
+          },
+          quantity: item.quantity,
+        }));
+
+      if (deliveryFee > 0) {
+        stripeLineItems.push({
+          price_data: {
+            currency: "eur",
+            unit_amount: Math.round(deliveryFee * 100),
+            product_data: { name: "Доставка" },
+          },
+          quantity: 1,
+        });
+      }
+
+      // Discount as a Stripe coupon (negative line items are not supported in Checkout).
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: stripeLineItems,
+        metadata: { orderId: order.id },
+        // success_url: user is redirected here after successful payment.
+        // ⚠️  paid=1 is cosmetic only — payment_status is set ONLY via webhook.
+        success_url: `${baseUrl}/track/${order.tracking_token}?paid=1`,
+        cancel_url: `${baseUrl}/checkout?cancelled=1`,
+      };
+
+      try {
+        if (discountAmount > 0) {
+          const coupon = await stripe.coupons.create({
+            amount_off: Math.round(discountAmount * 100),
+            currency: "eur",
+            duration: "once",
+          });
+          sessionParams.discounts = [{ coupon: coupon.id }];
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionParams);
+
+        // Persist session id so webhook can resolve the order by orderId from metadata.
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { stripe_session_id: session.id },
+        });
+
+        return reply.code(201).send({
+          ok: true,
+          data: {
+            order_number: order.order_number,
+            tracking_token: order.tracking_token,
+            total_amount: totalAmount,
+            stripe_checkout_url: session.url,
+          },
+        });
+      } catch (stripeError) {
+        req.log.error({ err: stripeError, orderId: order.id }, "Failed to create Stripe Checkout Session");
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: "cancelled",
+            payment_status: "failed",
+            cancel_reason: "Не удалось инициализировать Stripe Checkout",
+            cancelled_at: new Date(),
+          },
+        });
+
+        return err(reply, "Не удалось создать онлайн-оплату. Попробуйте снова или выберите другой способ оплаты.", 502);
+      }
+    }
+
+    // ─── Non-Stripe payment methods ─────────────────────────────
     return reply.code(201).send({
       ok: true,
       data: {

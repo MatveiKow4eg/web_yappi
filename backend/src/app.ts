@@ -9,6 +9,7 @@ import publicProductsRoutes from "./routes/public/products";
 import publicBannersRoutes from "./routes/public/banners";
 import publicOrdersRoutes from "./routes/public/orders";
 import publicPromoRoutes from "./routes/public/promo";
+import stripeWebhookRoutes from "./routes/public/stripe";
 import adminAuthRoutes from "./routes/admin/auth";
 import adminMeRoutes from "./routes/admin/me";
 import adminOrdersRoutes from "./routes/admin/orders";
@@ -22,6 +23,24 @@ import adminPromoCodesRoutes from "./routes/admin/promo_codes";
 const app = Fastify({ logger: true });
 
 const start = async () => {
+  // ─── RAW BODY PARSER ────────────────────────────────────────
+  // Stripe webhook verification requires the raw request body.
+  // This replaces Fastify's built-in JSON parser: we save the raw Buffer on req,
+  // then still parse JSON so all other routes work normally.
+  app.addContentTypeParser(
+    "application/json",
+    { parseAs: "buffer" },
+    (req, body, done) => {
+      (req as any).rawBody = body;
+      try {
+        done(null, JSON.parse((body as Buffer).toString("utf8")));
+      } catch (err: any) {
+        err.statusCode = 400;
+        done(err, undefined);
+      }
+    }
+  );
+
   // ─── CORS ───────────────────────────────────────────────────
   const rawOrigins = process.env.ALLOWED_ORIGINS ?? "http://localhost:3000";
   const allowedOrigins = rawOrigins.split(",").map((o) => o.trim());
@@ -46,6 +65,7 @@ const start = async () => {
   app.register(publicBannersRoutes, { prefix: "/api" });
   app.register(publicOrdersRoutes, { prefix: "/api" });
   app.register(publicPromoRoutes, { prefix: "/api" });
+  app.register(stripeWebhookRoutes, { prefix: "/api" });
 
   // ─── ADMIN ROUTES ───────────────────────────────────────────
   app.register(adminAuthRoutes, { prefix: "/api/admin" });

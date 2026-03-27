@@ -75,6 +75,8 @@ export default function CheckoutPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
+
     if (type === "delivery" && !address.trim()) {
       setError("Укажите адрес доставки");
       return;
@@ -116,7 +118,13 @@ export default function CheckoutPage() {
         setError(data.error ?? "Ошибка при оформлении заказа");
       } else {
         clearCart();
-        router.push(`/track/${data.data.tracking_token}`);
+        if (data.data.stripe_checkout_url) {
+          // Stripe Checkout: hard redirect to Stripe hosted page.
+          // ⚠️  Do NOT use router.push — Next.js router doesn't follow external URLs.
+          window.location.href = data.data.stripe_checkout_url;
+        } else {
+          router.push(`/track/${data.data.tracking_token}`);
+        }
       }
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
@@ -374,7 +382,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full mt-4 py-3.5"
+                className="btn-primary w-full mt-4 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Оформляем..." : "Оформить заказ"}
               </button>
