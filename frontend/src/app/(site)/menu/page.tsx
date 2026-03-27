@@ -9,6 +9,17 @@ export const metadata: Metadata = {
   description: "Все позиции меню Yappi Sushi — роллы, суши, сеты.",
 };
 
+function extractSortNum(imageUrl?: string | null): number {
+  const v = (imageUrl ?? "").trim();
+  // "# 115" or "#115"
+  const hashMatch = v.match(/^#\s*(\d+)/);
+  if (hashMatch) return parseInt(hashMatch[1]);
+  // "/images/sushi/115.png" or "https://.../115.png"
+  const pathMatch = v.match(/(\d+)\.\w+$/);
+  if (pathMatch) return parseInt(pathMatch[1]);
+  return 0;
+}
+
 export default async function MenuPage() {
   const categories = await AppApi.categories.list(true).catch(() => []);
 
@@ -33,7 +44,7 @@ export default async function MenuPage() {
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {cat.products.map((p: any) => (
+            {[...cat.products].sort((a: any, b: any) => extractSortNum(a.image_url) - extractSortNum(b.image_url)).map((p: any) => (
               <div
                 key={p.id}
                 className="rounded-2xl block overflow-hidden h-full flex flex-col"
