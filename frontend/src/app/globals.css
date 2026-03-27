@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  --font-noto: 'Noto Serif', serif;
+  --font-playfair: 'Playfair Display', serif;
 }
 
 @layer base {

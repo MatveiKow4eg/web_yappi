@@ -21,7 +21,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-noto)", "serif"],
+        sans: ["var(--font-playfair)", "serif"],
       },
     },
   },

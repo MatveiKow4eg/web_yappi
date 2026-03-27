@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Noto_Serif } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-const notoSerif = Noto_Serif({
+const playfair = Playfair_Display({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   style: ["normal", "italic"],
-  variable: "--font-noto",
+  variable: "--font-playfair",
   display: "swap",
 });
 
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" className={notoSerif.variable}>
+    <html lang="ru" className={playfair.variable}>
       <body className="bg-brand-black text-white font-sans antialiased min-h-screen">
         {children}
       </body>
