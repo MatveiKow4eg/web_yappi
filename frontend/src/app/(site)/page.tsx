@@ -222,24 +222,20 @@ export default async function HomePage() {
                         <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
                           {p.image_url ? `${p.image_url.replace(/^#\s*/, "").trim()}. ` : ""}{p.name_ru}
                         </p>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-brand-red font-black">
-                                {parseFloat(p.base_price.toString()).toFixed(2)} €
-                              </span>
-                              {p.old_price && (
-                                <span className="text-brand-text-muted line-through text-xs ml-1">
-                                  {parseFloat(p.old_price.toString()).toFixed(2)} €
-                                </span>
-                              )}
-                            </div>
-                            {p.pieces_total ? (
-                              <span className="text-brand-text-muted text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="text-brand-red font-black">
+                              {parseFloat(p.base_price.toString()).toFixed(2)} €
+                            </span>
+                            {p.pieces_total && (
+                              <span className="text-brand-text-muted text-xs ml-2 align-middle">
                                 {p.pieces_total} шт
                               </span>
-                            ) : (
-                              <span className="text-brand-text-muted text-xs">&nbsp;</span>
+                            )}
+                            {p.old_price && (
+                              <span className="text-brand-text-muted line-through text-xs ml-2">
+                                {parseFloat(p.old_price.toString()).toFixed(2)} €
+                              </span>
                             )}
                           </div>
                           {p.is_available && (
