@@ -2,7 +2,7 @@
 
 import { useCart } from "@/lib/cart-context";
 import { resolveProductImageSrc } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 interface Props {
   product_id: string;
@@ -29,7 +29,6 @@ export default function MenuAddToCart({
 }: Props) {
   const { addItem } = useCart();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
   const resolvedImage = resolveProductImageSrc(image_url);
 
@@ -43,16 +42,6 @@ export default function MenuAddToCart({
     ...(hasV1 ? [{ label: `${variant1_pieces} шт`, pieces: variant1_pieces!, unit_price: variant1_price!, mode: "v1" as const }] : []),
     ...(hasV2 ? [{ label: `${variant2_pieces} шт`, pieces: variant2_pieces!, unit_price: variant2_price!, mode: "v2" as const }] : []),
   ];
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
 
   function addOption(opt: typeof options[0]) {
     addItem({
@@ -85,13 +74,13 @@ export default function MenuAddToCart({
   }
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div className="w-full">
       <button
         onClick={(e) => {
           e.preventDefault();
           setOpen((v) => !v);
         }}
-        className="w-8 h-8 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90"
+        className="w-8 h-8 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 ml-auto"
         aria-label="Выбрать размер и добавить в корзину"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,15 +89,19 @@ export default function MenuAddToCart({
       </button>
 
       {open && (
-        <div className="absolute bottom-10 right-0 z-50 min-w-[160px] rounded-xl bg-brand-gray-dark border border-white/10 shadow-xl overflow-hidden">
+        <div className="mt-2 rounded-xl bg-brand-gray-dark border border-white/10 shadow-xl overflow-hidden">
+          <div className="px-3 py-2 border-b border-white/10 text-xs font-semibold text-brand-text-muted">
+            Добавить в корзину
+          </div>
           {options.map((opt) => (
             <button
               key={opt.mode}
               onClick={(e) => { e.preventDefault(); addOption(opt); }}
-              className="w-full flex items-center justify-between gap-4 px-4 py-2.5 text-sm hover:bg-brand-gray-mid transition-colors text-left"
+              className="w-full flex items-center justify-between gap-4 px-3 py-2.5 text-sm hover:bg-brand-gray-mid transition-colors text-left"
             >
-              <span className="text-white font-semibold">{opt.label}</span>
+              <span className="text-white font-semibold min-w-[54px]">{opt.label}</span>
               <span className="text-brand-red font-black whitespace-nowrap">{opt.unit_price.toFixed(2)} €</span>
+              <span className="text-xs text-brand-text-muted">Выбрать</span>
             </button>
           ))}
         </div>

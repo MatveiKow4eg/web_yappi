@@ -34,10 +34,9 @@ export default async function MenuPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {cat.products.map((p: any) => (
-              <a
+              <div
                 key={p.id}
-                href={`/product/${p.slug}`}
-                className="rounded-2xl cursor-pointer block overflow-hidden"
+                className="rounded-2xl block overflow-hidden"
               >
                 {/* Image */}
                 <div className="aspect-square relative">
@@ -67,17 +66,22 @@ export default async function MenuPage() {
                         {parseFloat(p.base_price.toString()).toFixed(2)} €
                       </span>
                     </div>
-                    {p.is_available && (
-                      <MenuAddToCart
-                        product_id={p.id}
-                        name={p.name_ru}
-                        image_url={resolveProductImageSrc(p.image_url) ?? undefined}
-                        price={parseFloat(p.base_price.toString())}
-                      />
-                    )}
                   </div>
+                  {p.is_available && (
+                    <MenuAddToCart
+                      product_id={p.id}
+                      name={p.name_ru}
+                      image_url={resolveProductImageSrc(p.image_url) ?? undefined}
+                      price={parseFloat(p.base_price.toString())}
+                      pieces_total={p.pieces_total ?? null}
+                      variant1_pieces={p.variant1_pieces ?? null}
+                      variant1_price={p.variant1_price ? parseFloat(p.variant1_price.toString()) : null}
+                      variant2_pieces={p.variant2_pieces ?? null}
+                      variant2_price={p.variant2_price ? parseFloat(p.variant2_price.toString()) : null}
+                    />
+                  )}
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </section>
