@@ -175,7 +175,11 @@ export default async function HomePage() {
                   <h3 className="text-xl font-bold text-white">{cat.name_ru}</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {cat.products.map((p: any) => (
+                  {[...cat.products].sort((a: any, b: any) => {
+                    const na = a.image_url ? parseInt(a.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
+                    const nb = b.image_url ? parseInt(b.image_url.replace(/^#\s*/, "").trim()) || 0 : 0;
+                    return na - nb;
+                  }).map((p: any) => (
                     <div
                       key={p.id}
                       className="rounded-2xl block overflow-hidden h-full flex flex-col"
