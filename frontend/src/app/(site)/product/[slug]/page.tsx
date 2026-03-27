@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AppApi } from "@/lib/api-client";
-import AddToCartButton from "@/components/ui/AddToCartButton";
 import HideOnErrorImage from "@/components/ui/HideOnErrorImage";
 import { resolveProductImageSrc } from "@/lib/utils";
+import ProductOrderBlock from "./ProductOrderBlock";
 
 const FALLBACK_SUSHI_IMAGES: Record<string, string> = {
   california: "/images/sushi/california.jpg",
@@ -61,17 +61,7 @@ export default async function ProductPage({ params }: Props) {
             <p className="text-brand-text-muted leading-relaxed mb-6">{product.description_ru}</p>
           )}
 
-          {/* Price */}
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl font-black text-brand-red">{price.toFixed(2)} €</span>
-            {product.old_price && (
-              <span className="text-brand-text-muted line-through text-lg">
-                {parseFloat(product.old_price.toString()).toFixed(2)} €
-              </span>
-            )}
-          </div>
-
-          {/* Variants - display only (full interactivity can be added later) */}
+          {/* Variants - display only */}
           {(product.variants?.length ?? 0) > 0 && (
             <div className="mb-6">
               <p className="text-sm font-semibold text-white mb-2">Вариант</p>
@@ -110,20 +100,20 @@ export default async function ProductPage({ params }: Props) {
             </div>
           ))}
 
-          {/* Add to cart */}
+          {/* Price + format toggle + add to cart */}
           <div className="mt-auto pt-6">
-            {product.is_available ? (
-              <AddToCartButton
-                product_id={product.id}
-                name={product.name_ru}
-                image_url={resolveProductImageSrc(product.image_url) ?? undefined}
-                unit_price={price}
-              />
-            ) : (
-              <div className="w-full py-4 text-center rounded-xl bg-brand-gray-mid text-brand-text-muted font-semibold">
-                Нет в наличии
-              </div>
-            )}
+            <ProductOrderBlock
+              product_id={product.id}
+              name={product.name_ru}
+              image_url={product.image_url}
+              base_price={price}
+              old_price={product.old_price ? parseFloat(product.old_price.toString()) : null}
+              pieces_total={(product as any).pieces_total ?? null}
+              allow_half_half={Boolean((product as any).allow_half_half)}
+              half_half_price={(product as any).half_half_price ? parseFloat((product as any).half_half_price.toString()) : null}
+              half_half_old_price={(product as any).half_half_old_price ? parseFloat((product as any).half_half_old_price.toString()) : null}
+              is_available={Boolean(product.is_available)}
+            />
           </div>
         </div>
       </div>

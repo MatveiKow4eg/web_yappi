@@ -13,7 +13,7 @@ export interface CartSelection {
 }
 
 export interface CartItem {
-  /** unique key = product_id + variant_id + selections hash */
+  /** unique key = product_id + variant_id + mode + selections hash */
   key: string;
   product_id: string;
   product_variant_id?: string;
@@ -22,6 +22,7 @@ export interface CartItem {
   image_url?: string;
   unit_price: number;
   quantity: number;
+  mode?: "full" | "half_half";
   selections: CartSelection[];
 }
 
@@ -43,13 +44,14 @@ const STORAGE_KEY = "yappi_cart";
 function buildKey(
   product_id: string,
   product_variant_id?: string,
+  mode?: "full" | "half_half",
   selections?: CartSelection[]
 ): string {
   const selKey = (selections ?? [])
     .map((s) => `${s.option_item_id}:${s.quantity}`)
     .sort()
     .join("|");
-  return `${product_id}_${product_variant_id ?? ""}__${selKey}`;
+  return `${product_id}_${product_variant_id ?? ""}_${mode ?? "full"}__${selKey}`;
 }
 
 // ─── Provider ───────────────────────────────────────────────────────────────
@@ -74,7 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback(
     (item: Omit<CartItem, "key" | "quantity"> & { quantity?: number }) => {
-      const key = buildKey(item.product_id, item.product_variant_id, item.selections);
+      const key = buildKey(item.product_id, item.product_variant_id, item.mode, item.selections);
       setItems((prev) => {
         const existing = prev.find((i) => i.key === key);
         if (existing) {
