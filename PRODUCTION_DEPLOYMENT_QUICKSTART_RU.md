@@ -409,6 +409,58 @@ sudo systemctl restart yappi-backend yappi-frontend
 
 ---
 
+## ⚠️ Консервативное обновление (если не уверены)
+
+Если вы не уверены какие точно изменения пришли:
+
+```bash
+# Сначала посмотрите какие файлы изменились
+git fetch origin
+git diff origin/main
+
+# Если что-то странное - не обновляйтесь
+# Проверьте изменения в git и убедитесь что они безопасны
+
+# Если всё OK - обновитесь
+git pull origin main
+```
+
+---
+
+## 🔄 Быстрое обновление (если не было изменений в migrations)
+
+Если вы уверены что БД не изменилась:
+
+```bash
+# Пропустите npm install и просто пересоберите
+cd backend && npm run build && cd ..
+cd frontend && npm run build && cd ..
+
+# Перезагрузить сервисы
+sudo systemctl restart yappi-backend yappi-frontend
+```
+
+---
+
+## ⏮️ Откат к предыдущей версии (если что-то сломалось)
+
+```bash
+# Посмотреть историю
+git log --oneline -10
+
+# Вернуться на версию назад
+git revert HEAD
+
+# Или жесткий откат
+git reset --hard HEAD~1
+
+# Заново собрать и перезагрузить
+cd backend && npm run build && cd ../frontend && npm run build && cd ..
+sudo systemctl restart yappi-backend yappi-frontend
+```
+
+---
+
 **Статус:** ✅ Production обновлено черед git pull
 
 **Время обновления:** ~10-15 минут  
