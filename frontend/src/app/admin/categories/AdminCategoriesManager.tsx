@@ -217,14 +217,6 @@ export default function AdminCategoriesManager() {
               />
             </div>
             <div>
-              <label className="block text-sm text-brand-text-muted mb-1.5">Название (EN)</label>
-              <input
-                className="input"
-                value={createForm.name_en}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, name_en: e.target.value }))}
-              />
-            </div>
-            <div>
               <label className="block text-sm text-brand-text-muted mb-1.5">Название (ET)</label>
               <input
                 className="input"
@@ -271,7 +263,6 @@ export default function AdminCategoriesManager() {
             <thead>
               <tr className="border-b border-white/5 text-brand-text-muted text-xs">
                 <th className="px-4 py-3 text-left font-medium">Название (RU)</th>
-                <th className="px-4 py-3 text-left font-medium">EN</th>
                 <th className="px-4 py-3 text-left font-medium">ET</th>
                 <th className="px-4 py-3 text-left font-medium">Slug</th>
                 <th className="px-4 py-3 text-center font-medium">Порядок</th>
@@ -283,7 +274,7 @@ export default function AdminCategoriesManager() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-brand-text-muted">
+                  <td colSpan={7} className="px-4 py-10 text-center text-brand-text-muted">
                     Загрузка категорий...
                   </td>
                 </tr>
@@ -291,7 +282,7 @@ export default function AdminCategoriesManager() {
 
               {!loading && !hasData && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-brand-text-muted">
+                  <td colSpan={7} className="px-4 py-12 text-center text-brand-text-muted">
                     Категорий нет. Создайте первую категорию выше.
                   </td>
                 </tr>
@@ -316,17 +307,6 @@ export default function AdminCategoriesManager() {
                           />
                         ) : (
                           <span className="text-white font-medium">{cat.name_ru}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {isEditing ? (
-                          <input
-                            className="input h-9"
-                            value={editForm.name_en}
-                            onChange={(e) => setEditForm((prev) => (prev ? { ...prev, name_en: e.target.value } : prev))}
-                          />
-                        ) : (
-                          <span className="text-brand-text-muted">{cat.name_en}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">

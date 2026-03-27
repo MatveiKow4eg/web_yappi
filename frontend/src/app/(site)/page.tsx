@@ -40,7 +40,7 @@ export default async function HomePage() {
                   Yappi Sushi
                 </h1>
 
-                <div className="mt-5 w-fit max-w-full min-w-[340px] sm:min-w-[390px] rounded-2xl border border-white/10 bg-[#111111] px-5 py-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+                <div className="mt-5 w-fit max-w-full min-w-[340px] sm:min-w-[390px] border border-white/10 bg-[#111111] px-5 py-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <p className="text-sm font-semibold text-white">Время ожидания</p>
                   </div>
@@ -170,14 +170,14 @@ export default async function HomePage() {
           // Real data from DB
           <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
             <aside className="hidden lg:block">
-              <div className="sticky top-28 rounded-2xl border border-white/10 bg-brand-gray-dark/60 p-4">
+              <div className="sticky top-28 border border-white/10 bg-brand-gray-dark/60 p-4">
                 <p className="text-sm font-semibold text-white mb-3">Категории</p>
                 <nav className="space-y-1">
                   {categories.filter((c: any) => c.products?.length > 0).map((cat: any) => (
                     <a
                       key={cat.id}
                       href={`#home-cat-${cat.slug ?? cat.id}`}
-                      className="block rounded-lg px-3 py-2 text-sm text-brand-text-muted hover:text-white hover:bg-white/5 transition-colors"
+                      className="block px-3 py-2 text-sm text-brand-text-muted hover:text-white hover:bg-white/5 transition-colors"
                     >
                       {cat.name_ru}
                     </a>

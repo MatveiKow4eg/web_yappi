@@ -237,30 +237,18 @@ export default function NewProductForm({ categories }: Props) {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-brand-text-muted mb-1.5">Название (EN)</label>
-              <input type="text" name="name_en" value={form.name_en} onChange={handleChange} className="input" />
-            </div>
-            <div>
-              <label className="block text-sm text-brand-text-muted mb-1.5">Название (ET)</label>
-              <input type="text" name="name_et" value={form.name_et} onChange={handleChange} className="input" />
-            </div>
+          <div>
+            <label className="block text-sm text-brand-text-muted mb-1.5">Название (ET)</label>
+            <input type="text" name="name_et" value={form.name_et} onChange={handleChange} className="input" />
           </div>
 
           <div>
             <label className="block text-sm text-brand-text-muted mb-1.5">Описание (RU)</label>
             <textarea name="description_ru" value={form.description_ru} onChange={handleChange} className="input resize-none" rows={2} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-brand-text-muted mb-1.5">Описание (EN)</label>
-              <textarea name="description_en" value={form.description_en} onChange={handleChange} className="input resize-none" rows={2} />
-            </div>
-            <div>
-              <label className="block text-sm text-brand-text-muted mb-1.5">Описание (ET)</label>
-              <textarea name="description_et" value={form.description_et} onChange={handleChange} className="input resize-none" rows={2} />
-            </div>
+          <div>
+            <label className="block text-sm text-brand-text-muted mb-1.5">Описание (ET)</label>
+            <textarea name="description_et" value={form.description_et} onChange={handleChange} className="input resize-none" rows={2} />
           </div>
         </div>
       </div>

@@ -100,10 +100,7 @@ export default function AdminSettingsForm({ settings }: Props) {
             <Field label="Email" name="email" type="email" placeholder="info@yappi.ee" />
           </div>
           <Field label="Адрес (RU)" name="address_ru" />
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Адрес (EN)" name="address_en" />
-            <Field label="Адрес (ET)" name="address_et" />
-          </div>
+          <Field label="Адрес (ET)" name="address_et" />
         </div>
       </Section>
 
