@@ -15,6 +15,7 @@ const SettingsSchema = z.object({
   stripe_enabled: z.boolean().optional(),
   cash_on_pickup_enabled: z.boolean().optional(),
   card_on_pickup_enabled: z.boolean().optional(),
+  kitchen_default_prep_minutes: z.number().int().min(1).max(240).optional(),
   min_delivery_time_minutes: z.number().int().positive().optional(),
   max_delivery_time_minutes: z.number().int().positive().optional(),
 });

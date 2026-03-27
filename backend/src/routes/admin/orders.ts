@@ -1,11 +1,12 @@
 import { FastifyInstance } from "fastify";
-import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
 import { z } from "zod";
+import { prisma } from "../../lib/prisma";
+import { err, getAdminSession, ok, requireAdminSession } from "../../lib/session";
 
 const StatusSchema = z.object({
   status: z.enum(["new", "confirmed_preparing", "ready", "sent", "completed", "cancelled"]),
   cancel_reason: z.string().optional(),
+  estimated_prep_minutes: z.number().int().min(1).max(240).optional(),
 });
 
 const STATUS_TIMESTAMPS: Record<string, string> = {
@@ -41,9 +42,11 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
       if (!requireAdminSession(session, reply)) return;
 
       const { status, statuses, page = "1", limit = "20" } = req.query;
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-      
-      let statusFilter: any = {};
+      const parsedPage = Number.parseInt(page, 10);
+      const parsedLimit = Number.parseInt(limit, 10);
+      const skip = (parsedPage - 1) * parsedLimit;
+
+      let statusFilter: Record<string, unknown> = {};
       if (status) statusFilter = { status };
       if (statuses) statusFilter = { status: { in: statuses.split(",") } };
 
@@ -52,14 +55,17 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
           where: statusFilter,
           orderBy: { created_at: "desc" },
           skip,
-          // If limit=0, take everything (for kitchen)
-          ...(parseInt(limit) > 0 ? { take: parseInt(limit) } : {}),
-          include: { items: { include: { selections: true } }, promo_code: { select: { code: true } } },
+          ...(parsedLimit > 0 ? { take: parsedLimit } : {}),
+          include: {
+            items: { include: { selections: true } },
+            promo_code: { select: { code: true } },
+            delivery_zone: true,
+          },
         }),
         prisma.order.count({ where: statusFilter }),
       ]);
 
-      return ok(reply, { orders, total, page: parseInt(page), limit: parseInt(limit) });
+      return ok(reply, { orders, total, page: parsedPage, limit: parsedLimit });
     }
   );
 
@@ -88,12 +94,48 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
     const parsed = StatusSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
 
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        status: true,
+        estimated_prep_minutes: true,
+      },
+    });
+
+    if (!existingOrder) return err(reply, "Заказ не найден", 404);
+
     const tsField = STATUS_TIMESTAMPS[parsed.data.status];
+    let estimatedPrepMinutes = existingOrder.estimated_prep_minutes ?? undefined;
+    let estimatedReadyAt: Date | null | undefined;
+
+    if (parsed.data.status === "confirmed_preparing") {
+      const settings = await prisma.restaurantSettings.findFirst({
+        select: { kitchen_default_prep_minutes: true },
+      });
+
+      estimatedPrepMinutes =
+        parsed.data.estimated_prep_minutes ??
+        existingOrder.estimated_prep_minutes ??
+        settings?.kitchen_default_prep_minutes ??
+        20;
+
+      estimatedReadyAt = new Date(Date.now() + estimatedPrepMinutes * 60 * 1000);
+    }
+
     const order = await prisma.order.update({
       where: { id: req.params.id },
       data: {
         status: parsed.data.status,
-        cancel_reason: parsed.data.cancel_reason,
+        cancel_reason: parsed.data.status === "cancelled" ? parsed.data.cancel_reason ?? null : null,
+        estimated_prep_minutes:
+          parsed.data.status === "confirmed_preparing" ? estimatedPrepMinutes : existingOrder.estimated_prep_minutes,
+        estimated_ready_at:
+          parsed.data.status === "confirmed_preparing"
+            ? estimatedReadyAt
+            : parsed.data.status === "cancelled"
+              ? null
+              : undefined,
         ...(tsField ? { [tsField]: new Date() } : {}),
       },
     });
@@ -104,10 +146,44 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
         action: "order_status_changed",
         entity_type: "Order",
         entity_id: order.id,
-        payload_json: { status: parsed.data.status } as object,
+        payload_json: {
+          from_status: existingOrder.status,
+          status: parsed.data.status,
+          estimated_prep_minutes: estimatedPrepMinutes,
+        } as object,
       },
     });
 
     return ok(reply, order);
+  });
+
+  // DELETE /api/admin/orders/:id  (non-Stripe orders only)
+  app.delete<{ Params: { id: string } }>("/orders/:id", async (req, reply) => {
+    const session = await getAdminSession(req);
+    if (!requireAdminSession(session, reply)) return;
+
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, payment_method: true, order_number: true },
+    });
+
+    if (!order) return err(reply, "Заказ не найден", 404);
+    if (order.payment_method === "stripe") {
+      return err(reply, "Нельзя удалить заказ с онлайн-оплатой", 403);
+    }
+
+    await prisma.order.delete({ where: { id: order.id } });
+
+    await prisma.adminActionLog.create({
+      data: {
+        admin_user_id: session.id,
+        action: "order_deleted",
+        entity_type: "Order",
+        entity_id: order.id,
+        payload_json: { order_number: order.order_number } as object,
+      },
+    });
+
+    return ok(reply, { deleted: true });
   });
 }

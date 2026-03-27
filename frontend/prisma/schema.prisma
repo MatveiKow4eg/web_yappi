@@ -224,23 +224,27 @@ model DeliveryZone {
 
 // ─────────────────────── RESTAURANT SETTINGS ────────────────
 model RestaurantSettings {
-  id                        String   @id @default(cuid())
-  restaurant_name           String   @default("Yappi Sushi")
-  phone                     String?
-  email                     String?
-  address_ru                String?
-  address_en                String?
-  address_et                String?
-  pickup_enabled            Boolean  @default(true)
-  delivery_enabled          Boolean  @default(true)
-  stripe_enabled            Boolean  @default(false)
-  cash_on_pickup_enabled    Boolean  @default(true)
-  card_on_pickup_enabled    Boolean  @default(true)
-  min_delivery_time_minutes Int      @default(30)
-  max_delivery_time_minutes Int      @default(60)
-  working_hours_json        Json?
-  social_links_json         Json?
-  updated_at                DateTime @updatedAt
+  id                           String   @id @default(cuid())
+  restaurant_name              String   @default("Yappi Sushi")
+  phone                        String?
+  email                        String?
+  address_ru                   String?
+  address_en                   String?
+  address_et                   String?
+  pickup_enabled               Boolean  @default(true)
+  delivery_enabled             Boolean  @default(true)
+  stripe_enabled               Boolean  @default(false)
+  cash_on_pickup_enabled       Boolean  @default(true)
+  card_on_pickup_enabled       Boolean  @default(true)
+  kitchen_default_prep_minutes Int      @default(20)
+  kitchen_is_open              Boolean  @default(false)
+  kitchen_day_started_at       DateTime?
+  kitchen_day_ended_at         DateTime?
+  min_delivery_time_minutes    Int      @default(30)
+  max_delivery_time_minutes    Int      @default(60)
+  working_hours_json           Json?
+  social_links_json            Json?
+  updated_at                   DateTime @updatedAt
 }
 
 // ─────────────────────── ORDERS ─────────────────────────────
@@ -270,14 +274,16 @@ model Order {
   delivery_zone_id String?
   cancel_reason    String?
   created_at       DateTime        @default(now())
-  updated_at       DateTime        @updatedAt
-  stripe_session_id String?         @unique
-  checkout_fingerprint String?
-  confirmed_at     DateTime?
-  ready_at         DateTime?
-  sent_at          DateTime?
-  completed_at     DateTime?
-  cancelled_at     DateTime?
+  updated_at            DateTime        @updatedAt
+  stripe_session_id     String?         @unique
+  checkout_fingerprint  String?
+  estimated_prep_minutes Int?
+  estimated_ready_at    DateTime?
+  confirmed_at          DateTime?
+  ready_at              DateTime?
+  sent_at               DateTime?
+  completed_at          DateTime?
+  cancelled_at          DateTime?
 
   items         OrderItem[]
   promo_code    PromoCode?   @relation(fields: [promo_code_id], references: [id])

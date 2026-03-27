@@ -5,24 +5,29 @@ import { verifyAdminToken } from "@/lib/auth";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Protect /admin/* routes (except /admin/login)
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isKitchenRoute = pathname.startsWith("/kitchen");
+  const isAdminLogin = pathname === "/admin/login";
+  const isKitchenLogin = pathname === "/kitchen/login";
+
+  // Protect /admin/* and /kitchen/* routes, except their login pages.
+  if ((isAdminRoute && !isAdminLogin) || (isKitchenRoute && !isKitchenLogin)) {
     const token = req.cookies.get("admin_token")?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
+      return NextResponse.redirect(new URL(isKitchenRoute ? "/kitchen/login" : "/admin/login", req.url));
     }
 
     const session = await verifyAdminToken(token);
     if (!session) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
+      return NextResponse.redirect(new URL(isKitchenRoute ? "/kitchen/login" : "/admin/login", req.url));
     }
 
-    // Kitchen role can only access /admin/orders and /kitchen
+    // Kitchen role can only access /kitchen and a limited admin area.
     if (
       session.role === "kitchen" &&
+      isAdminRoute &&
       !pathname.startsWith("/admin/orders") &&
-      !pathname.startsWith("/kitchen") &&
       pathname !== "/admin"
     ) {
       return NextResponse.redirect(new URL("/admin/orders", req.url));

@@ -76,8 +76,14 @@ export interface Order {
   sent_at?: string;
   completed_at?: string;
   cancelled_at?: string;
-    estimated_min_minutes?: number;
-    estimated_max_minutes?: number;
+  estimated_prep_minutes?: number;
+  estimated_ready_at?: string;
+  estimated_min_minutes?: number;
+  estimated_max_minutes?: number;
+  delivery_zone?: {
+    id: string;
+    name: string;
+  };
   items: Array<{
     id: string;
     product_name_snapshot: string;
@@ -98,6 +104,15 @@ export interface AdminOrdersListResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface KitchenState {
+  kitchen_is_open: boolean;
+  kitchen_day_started_at?: string | null;
+  kitchen_day_ended_at?: string | null;
+  kitchen_default_prep_minutes: number;
+  min_delivery_time_minutes: number;
+  max_delivery_time_minutes: number;
 }
 
 export interface AdminLoginRequest {
@@ -193,6 +208,16 @@ export const AppApi = {
     },
     settings: {
       get: () => fetchApi<any>("/api/admin/settings"),
+    },
+    kitchen: {
+      get: () => fetchApi<KitchenState>("/api/admin/kitchen"),
+      startDay: () => fetchApi<KitchenState>("/api/admin/kitchen/start-day", { method: "POST" }),
+      endDay: () => fetchApi<KitchenState>("/api/admin/kitchen/end-day", { method: "POST" }),
+      updateSettings: (payload: { kitchen_default_prep_minutes: number }) =>
+        fetchApi<KitchenState>("/api/admin/kitchen/settings", {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        }),
     },
     promoCodes: {
       list: () => fetchApi<any[]>("/api/admin/promo-codes"),
