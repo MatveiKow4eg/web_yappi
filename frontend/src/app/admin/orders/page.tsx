@@ -1,6 +1,14 @@
 import { AppApi } from "@/lib/api-client";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
+
+const PAYMENT_LABELS: Record<string, string> = {
+  stripe: "Интернет-платеж",
+  cash_on_pickup: "Наличными при самовывозе",
+  card_on_pickup: "Картой при самовывозе",
+  cash_on_delivery: "Наличными курьеру",
+  card_on_delivery: "Картой курьеру",
+};
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Заказы — Админка" };
@@ -117,7 +125,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-brand-text-muted text-xs">
-                      {order.payment_method.replace(/_/g, " ")}
+                      {PAYMENT_LABELS[order.payment_method] ?? order.payment_method.replace(/_/g, " ")}
                     </td>
                     <td className="px-4 py-3 text-right text-white font-bold">
                       {parseFloat(order.total_amount.toString()).toFixed(2)} €

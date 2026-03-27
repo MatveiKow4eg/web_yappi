@@ -190,7 +190,7 @@ export default function AdminSettingsForm({ settings }: Props) {
         <div className="space-y-3">
           <Toggle label="Доставка включена" name="delivery_enabled" />
           <Toggle label="Самовывоз включен" name="pickup_enabled" />
-          <Toggle label="Stripe (онлайн-оплата)" name="stripe_enabled" />
+          <Toggle label="Интернет-платеж" name="stripe_enabled" />
           <Toggle label="Оплата наличными при самовывозе" name="cash_on_pickup_enabled" />
           <Toggle label="Оплата картой при самовывозе" name="card_on_pickup_enabled" />
         </div>

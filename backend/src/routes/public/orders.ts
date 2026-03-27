@@ -272,7 +272,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
 
       if (!process.env.STRIPE_SECRET_KEY) {
         req.log.error("Stripe checkout blocked: STRIPE_SECRET_KEY is missing");
-        return err(reply, "Онлайн-оплата временно недоступна: Stripe не настроен на сервере", 422);
+        return err(reply, "Интернет-платеж временно недоступен: платежный сервис не настроен на сервере", 422);
       }
     }
 
@@ -422,7 +422,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
 
       if (!baseUrl) {
         req.log.error("Stripe checkout: BASE_URL is missing and request origin is unavailable");
-        return err(reply, "Не настроен публичный URL фронтенда для Stripe редиректа", 500);
+        return err(reply, "Не настроен публичный URL фронтенда для интернет-платежа", 500);
       }
 
       const stripe = getStripe();
@@ -500,12 +500,12 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
           data: {
             status: "cancelled",
             payment_status: "failed",
-            cancel_reason: "Не удалось инициализировать Stripe Checkout",
+            cancel_reason: "Не удалось инициализировать интернет-платеж",
             cancelled_at: new Date(),
           },
         });
 
-        return err(reply, "Не удалось создать онлайн-оплату. Попробуйте снова или выберите другой способ оплаты.", 502);
+        return err(reply, "Не удалось создать интернет-платеж. Попробуйте снова или выберите другой способ оплаты.", 502);
       }
     }
 
@@ -523,13 +523,22 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
 
   // GET /api/orders/track/:token
   app.get<{ Params: { token: string } }>("/orders/track/:token", async (req, reply) => {
-    const order = await prisma.order.findFirst({
-      where: { tracking_token: req.params.token },
-      include: {
-        items: { include: { selections: true } },
-      },
-    });
+    const [order, settings] = await Promise.all([
+      prisma.order.findFirst({
+        where: { tracking_token: req.params.token },
+        include: {
+          items: { include: { selections: true } },
+        },
+      }),
+      prisma.restaurantSettings.findFirst({
+        select: { min_delivery_time_minutes: true, max_delivery_time_minutes: true },
+      }),
+    ]);
     if (!order) return err(reply, "Заказ не найден", 404);
-    return ok(reply, order);
+    return ok(reply, {
+      ...order,
+      estimated_min_minutes: settings?.min_delivery_time_minutes ?? 30,
+      estimated_max_minutes: settings?.max_delivery_time_minutes ?? 60,
+    });
   });
 }

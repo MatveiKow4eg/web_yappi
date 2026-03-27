@@ -235,7 +235,7 @@ export default function CheckoutPage() {
             return;
           }
 
-          setError("Онлайн-оплата сейчас недоступна. Заказ не был отправлен в Stripe.");
+          setError("Интернет-платеж сейчас недоступен. Заказ не был отправлен в платежный сервис.");
         } else {
           clearCart();
           sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
@@ -254,12 +254,12 @@ export default function CheckoutPage() {
       ? [
           { value: "cash_on_delivery", label: "💵 Наличными курьеру" },
           { value: "card_on_delivery", label: "💳 Картой курьеру" },
-          { value: "stripe", label: "🌐 Онлайн (Stripe)" },
+          { value: "stripe", label: "🌐 Интернет-платеж" },
         ]
       : [
           { value: "cash_on_pickup", label: "💵 Наличными при получении" },
           { value: "card_on_pickup", label: "💳 Картой при получении" },
-          { value: "stripe", label: "🌐 Онлайн (Stripe)" },
+          { value: "stripe", label: "🌐 Интернет-платеж" },
         ];
 
   const visiblePaymentOptions = paymentOptions.filter(

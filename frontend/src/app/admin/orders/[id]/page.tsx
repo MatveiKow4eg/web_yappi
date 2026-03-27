@@ -20,7 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
-  stripe: "Stripe (онлайн)",
+  stripe: "Интернет-платеж",
   cash_on_pickup: "Наличными при самовывозе",
   card_on_pickup: "Картой при самовывозе",
   cash_on_delivery: "Наличными курьеру",

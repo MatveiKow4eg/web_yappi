@@ -76,6 +76,8 @@ export interface Order {
   sent_at?: string;
   completed_at?: string;
   cancelled_at?: string;
+    estimated_min_minutes?: number;
+    estimated_max_minutes?: number;
   items: Array<{
     id: string;
     product_name_snapshot: string;

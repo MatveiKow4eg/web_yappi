@@ -7,22 +7,61 @@ export const metadata: Metadata = {
   title: "Отслеживание заказа",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  new: "Новый — ожидает подтверждения",
-  confirmed_preparing: "Подтвержден — готовится",
-  ready: "Готов к выдаче",
-  sent: "Отправлен курьером",
-  completed: "Доставлен",
+// Acceptance status (first row): was the order accepted or rejected?
+const ACCEPTANCE_LABELS: Record<string, string> = {
+  new: "Ожидание",
+  confirmed_preparing: "Приняли",
+  ready: "Приняли",
+  sent: "Приняли",
+  completed: "Приняли",
+  cancelled: "Отклонено",
+};
+
+const ACCEPTANCE_COLORS: Record<string, string> = {
+  new: "badge-amber",
+  confirmed_preparing: "badge-green",
+  ready: "badge-green",
+  sent: "badge-green",
+  completed: "badge-green",
+  cancelled: "badge-red",
+};
+
+// Readiness status (third row)
+const READINESS_LABELS: Record<string, string> = {
+  new: "Ожидает",
+  confirmed_preparing: "Готовится",
+  ready: "Готов",
+  sent: "Передан курьеру",
+  completed: "Завершён",
   cancelled: "Отменён",
 };
 
-const STATUS_COLORS: Record<string, string> = {
+const READINESS_COLORS: Record<string, string> = {
   new: "badge-gray",
-  confirmed_preparing: "badge-red",
+  confirmed_preparing: "badge-amber",
   ready: "badge-green",
-  sent: "badge-red",
+  sent: "badge-amber",
   completed: "badge-green",
-  cancelled: "badge-gray",
+  cancelled: "badge-red",
+};
+
+// Delivery status (fourth row, only for delivery orders)
+const DELIVERY_LABELS: Record<string, string> = {
+  new: "Ожидание",
+  confirmed_preparing: "Ожидание",
+  ready: "Ожидание",
+  sent: "В процессе",
+  completed: "Доставлен",
+  cancelled: "Отменено",
+};
+
+const DELIVERY_COLORS: Record<string, string> = {
+  new: "badge-gray",
+  confirmed_preparing: "badge-gray",
+  ready: "badge-gray",
+  sent: "badge-amber",
+  completed: "badge-green",
+  cancelled: "badge-red",
 };
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -31,10 +70,12 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
   failed: "❌ Не оплачено",
 };
 
-const PAYMENT_STATUS_COLORS: Record<string, string> = {
-  pending: "badge-amber",
-  paid: "badge-green",
-  failed: "badge-red",
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  stripe: "Интернет-платеж",
+  cash_on_pickup: "Наличными при самовывозе",
+  card_on_pickup: "Картой при самовывозе",
+  cash_on_delivery: "Наличными курьеру",
+  card_on_delivery: "Картой курьеру",
 };
 
 interface Props {
@@ -51,8 +92,14 @@ export default async function TrackPage({ params, searchParams }: Props) {
     ? searchParams?.paid[0]
     : searchParams?.paid;
   const returnedFromPaidStripe = paidParam === "1";
-  const label = STATUS_LABELS[order.status] ?? order.status;
-  const colorClass = STATUS_COLORS[order.status] ?? "badge-gray";
+
+  const acceptanceLabel = ACCEPTANCE_LABELS[order.status] ?? "Ожидание";
+  const acceptanceColor = ACCEPTANCE_COLORS[order.status] ?? "badge-gray";
+  const readinessLabel = READINESS_LABELS[order.status] ?? order.status;
+  const readinessColor = READINESS_COLORS[order.status] ?? "badge-gray";
+  const deliveryLabel = DELIVERY_LABELS[order.status] ?? "Ожидание";
+  const deliveryColor = DELIVERY_COLORS[order.status] ?? "badge-gray";
+  const showEstimated = order.status !== "cancelled" && order.status !== "completed";
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
@@ -63,26 +110,44 @@ export default async function TrackPage({ params, searchParams }: Props) {
         <p className="text-brand-text-muted">Заказ #{order.order_number}</p>
       </div>
 
-      {returnedFromPaidStripe && (
-        <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          Оплата в Stripe завершена. Если статус оплаты ещё не обновился, подождите несколько секунд: заказ станет paid только после подтверждённого webhook от Stripe.
-        </div>
-      )}
-
-      {/* Status card */}
+      {/* Status list card */}
       <div className="card p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-brand-text-muted">Статус заказа</span>
-          <span className={colorClass}>{label}</span>
+        <h2 className="font-bold text-white mb-4">Статус заказа</h2>
+
+        {/* Row 1: Acceptance */}
+        <div className="flex items-center justify-between py-3 border-b border-white/5">
+          <span className="text-sm text-brand-text-muted">Ожидание</span>
+          <span className={acceptanceColor}>{acceptanceLabel}</span>
         </div>
 
-        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
-          <span className="text-sm text-brand-text-muted">Статус оплаты</span>
-          <span className={PAYMENT_STATUS_COLORS[order.payment_status] ?? "badge-gray"}>
-            {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status}
-          </span>
+        {/* Row 2: Estimated wait — hidden when completed or cancelled */}
+        {showEstimated && (
+          <div className="flex items-center justify-between py-3 border-b border-white/5">
+            <span className="text-sm text-brand-text-muted">Примерное ожидание</span>
+            <span className="text-white text-sm font-medium">
+              {order.estimated_min_minutes ?? 30}–{order.estimated_max_minutes ?? 60} мин
+            </span>
+          </div>
+        )}
+
+        {/* Row 3: Readiness */}
+        <div className={`flex items-center justify-between py-3 ${order.type === "delivery" ? "border-b border-white/5" : ""}`}>
+          <span className="text-sm text-brand-text-muted">Готовность заказа</span>
+          <span className={readinessColor}>{readinessLabel}</span>
         </div>
 
+        {/* Row 4: Delivery — only for delivery orders */}
+        {order.type === "delivery" && (
+          <div className="flex items-center justify-between py-3">
+            <span className="text-sm text-brand-text-muted">Доставка</span>
+            <span className={deliveryColor}>{deliveryLabel}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Order details card */}
+      <div className="card p-6 mb-6">
+        <h2 className="font-bold text-white mb-4">Детали заказа</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-brand-text-muted mb-1">Тип</p>
@@ -92,19 +157,25 @@ export default async function TrackPage({ params, searchParams }: Props) {
           </div>
           <div>
             <p className="text-brand-text-muted mb-1">Оплата</p>
-            <p className="text-white font-medium capitalize">
-              {order.payment_method.replace(/_/g, " ")}
+            <p className="text-white font-medium">
+              {PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method.replace(/_/g, " ")}
             </p>
           </div>
           <div>
-            <p className="text-brand-text-muted mb-1">Имя</p>
-            <p className="text-white font-medium">{order.customer_name}</p>
+            <p className="text-brand-text-muted mb-1">Статус оплаты</p>
+            <p className="text-white font-medium">
+              {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status}
+            </p>
           </div>
           <div>
             <p className="text-brand-text-muted mb-1">Сумма</p>
             <p className="text-white font-bold text-brand-red">
               {parseFloat(order.total_amount.toString()).toFixed(2)} €
             </p>
+          </div>
+          <div>
+            <p className="text-brand-text-muted mb-1">Имя</p>
+            <p className="text-white font-medium">{order.customer_name}</p>
           </div>
         </div>
 
