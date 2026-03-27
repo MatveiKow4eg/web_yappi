@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Playfair_Display } from "next/font/google";
+import { Tenor_Sans } from "next/font/google";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+const tenorSans = Tenor_Sans({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  style: ["normal", "italic"],
-  variable: "--font-playfair",
+  weight: ["400"],
+  variable: "--font-tenor",
   display: "swap",
 });
 
@@ -26,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" className={playfair.variable}>
+    <html lang="ru" className={tenorSans.variable}>
       <body className="bg-brand-black text-white font-sans antialiased min-h-screen">
         {children}
       </body>
