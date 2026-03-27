@@ -265,8 +265,14 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         select: { stripe_enabled: true },
       });
 
-      if (!settings?.stripe_enabled || !process.env.STRIPE_SECRET_KEY) {
-        return err(reply, "Онлайн-оплата временно недоступна", 422);
+      if (!settings?.stripe_enabled) {
+        req.log.warn("Stripe checkout blocked: stripe_enabled is false");
+        return err(reply, "Онлайн-оплата отключена в настройках ресторана", 422);
+      }
+
+      if (!process.env.STRIPE_SECRET_KEY) {
+        req.log.error("Stripe checkout blocked: STRIPE_SECRET_KEY is missing");
+        return err(reply, "Онлайн-оплата временно недоступна: Stripe не настроен на сервере", 422);
       }
     }
 
