@@ -82,7 +82,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
             created_at: true,
             updated_at: true,
             category: { select: { name_ru: true, slug: true } },
-          },
+          } as any,
         }),
         prisma.product.count({ where: category ? { category: { slug: category } } : {} }),
       ]);
@@ -123,7 +123,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
         created_at: true,
         updated_at: true,
         category: { select: { id: true, name_ru: true, slug: true } },
-      },
+      } as any,
     });
 
     if (!product) return err(reply, "Товар не найден", 404);
