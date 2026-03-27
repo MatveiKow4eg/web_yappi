@@ -58,11 +58,14 @@ export default async function MenuPage() {
                 {/* Info */}
                 <div className="p-3 flex flex-col flex-1">
                   <p className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
-                    {p.image_url ? `${p.image_url.replace(/^#\s*/, "").trim()}. ` : ""}{p.name_ru}
+                    {p.image_url && (
+                      <span className="text-brand-red mr-1">{`${p.image_url.replace(/^#\s*/, "").trim()}.`}</span>
+                    )}
+                    {p.name_ru}
                   </p>
                   <div className="mt-auto flex items-end justify-between gap-2">
                     <div>
-                      <span className="text-brand-red font-bold">
+                      <span className="text-white font-bold">
                         {parseFloat(p.base_price.toString()).toFixed(2)} €
                       </span>
                       {([p.pieces_total, p.variant1_pieces, p.variant2_pieces]
