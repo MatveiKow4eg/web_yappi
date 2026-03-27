@@ -36,7 +36,7 @@ export default async function HomePage() {
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center py-2 sm:py-4">
             <div>
               <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[1.02] max-w-xl">
-                Свежие суши с доставкой в Tallinn
+                Yappi Sushi
               </h1>
 
               <p className="text-brand-text-muted text-base sm:text-lg mt-5 max-w-xl leading-relaxed">
@@ -74,6 +74,10 @@ export default async function HomePage() {
                   alt="Сет суши"
                   fill
                   className="object-contain drop-shadow-[0_30px_55px_rgba(0,0,0,0.55)]"
+                  style={{
+                    WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 92%, transparent 100%)",
+                    maskImage: "linear-gradient(to bottom, black 0%, black 92%, transparent 100%)",
+                  }}
                   priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
