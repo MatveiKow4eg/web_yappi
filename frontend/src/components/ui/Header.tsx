@@ -15,12 +15,11 @@ export default function Header() {
   const { totalItems } = useCart();
 
   return (
-    <header className="sticky top-0 z-50 px-4 sm:px-6 pt-4">
+    <header className="sticky top-0 z-50 bg-brand-black">
       <div className="max-w-7xl mx-auto">
-        <div className="rounded-[28px] border border-white/10 bg-brand-black/75 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-          <div className="h-16 px-4 sm:px-5 flex items-center justify-between gap-3">
+        <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-3 min-w-0 flex-shrink-0">
-              <span className="w-10 h-10 rounded-2xl bg-brand-red text-white font-black text-sm flex items-center justify-center shadow-lg shadow-brand-red/20">
+              <span className="w-10 h-10 rounded-md bg-brand-red text-white font-black text-sm flex items-center justify-center">
                 YS
               </span>
               <div className="min-w-0">
@@ -29,12 +28,12 @@ export default function Header() {
               </div>
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-1 rounded-full border border-white/5 bg-white/[0.03] p-1">
+            <nav className="hidden lg:flex items-center gap-6">
               {nav.map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}
-                  className="px-4 py-2 rounded-full text-sm font-medium text-brand-text-muted hover:text-white hover:bg-white/5 transition-colors"
+                  className="text-sm font-medium text-brand-text-muted hover:text-white transition-colors"
                 >
                   {n.label}
                 </Link>
@@ -44,7 +43,7 @@ export default function Header() {
             <div className="flex items-center gap-2 sm:gap-3">
               <a
                 href="tel:+37250000000"
-                className="hidden xl:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/[0.03] text-sm text-white hover:border-white/20 transition-colors"
+                className="hidden xl:inline-flex items-center gap-2 px-3 py-2 text-sm text-white"
               >
                 <span className="text-brand-red">•</span>
                 +372 5000 0000
@@ -52,7 +51,7 @@ export default function Header() {
 
               <Link
                 href="/cart"
-                className="relative inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-brand-red hover:bg-brand-red-dark transition-colors text-sm font-semibold text-white"
+                className="relative inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-md bg-brand-red hover:bg-brand-red-dark transition-colors text-sm font-semibold text-white"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -70,7 +69,7 @@ export default function Header() {
 
               <button
                 onClick={() => setOpen(!open)}
-                className="lg:hidden w-11 h-11 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center hover:bg-white/[0.06] transition-colors"
+                className="lg:hidden w-10 h-10 rounded-md bg-brand-gray-mid flex items-center justify-center hover:bg-brand-gray-light transition-colors"
                 aria-label={open ? "Закрыть меню" : "Открыть меню"}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,31 +81,30 @@ export default function Header() {
                 </svg>
               </button>
             </div>
-          </div>
+        </div>
 
-          {open && (
-            <div className="lg:hidden px-4 pb-4 pt-1 border-t border-white/5">
-              <div className="rounded-3xl bg-white/[0.03] border border-white/5 p-2">
+        {open && (
+          <div className="lg:hidden px-4 pb-4">
+            <div className="bg-brand-black p-2">
                 {nav.map((n) => (
                   <Link
                     key={n.href}
                     href={n.href}
                     onClick={() => setOpen(false)}
-                    className="block px-4 py-3 rounded-2xl text-sm font-medium text-brand-text-muted hover:text-white hover:bg-white/[0.04] transition-colors"
+                    className="block px-3 py-2 text-sm font-medium text-brand-text-muted hover:text-white transition-colors"
                   >
                     {n.label}
                   </Link>
                 ))}
                 <a
                   href="tel:+37250000000"
-                  className="block px-4 py-3 rounded-2xl text-sm font-medium text-white hover:bg-white/[0.04] transition-colors"
+                  className="block px-3 py-2 text-sm font-medium text-white"
                 >
                   +372 5000 0000
                 </a>
-              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

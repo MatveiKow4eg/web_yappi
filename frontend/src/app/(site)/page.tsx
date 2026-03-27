@@ -35,34 +35,53 @@ export default async function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center py-2 sm:py-4">
             <div>
-              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[1.02] max-w-xl">
-                Yappi Sushi
-              </h1>
+              <div className="max-w-xl">
+                <h1 className="inline-block text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[1.02]">
+                  Yappi Sushi
+                </h1>
 
-              <p className="text-brand-text-muted text-base sm:text-lg mt-5 max-w-xl leading-relaxed">
-                Сеты, роллы, запечённые и темпура. Готовим после заказа. Доставка 30–60 минут или удобный самовывоз.
-              </p>
+                <div className="mt-5 w-fit max-w-full min-w-[340px] sm:min-w-[390px] rounded-2xl border border-white/10 bg-[#111111] px-5 py-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <p className="text-sm font-semibold text-white">Время ожидания</p>
+                  </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-7">
-                <a
-                  href="#menu"
-                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-brand-red hover:bg-brand-red-dark transition-colors text-white font-semibold"
-                >
-                  Смотреть меню
-                </a>
-                <Link
-                  href="/promotions"
-                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-xl border border-white/12 bg-white/[0.02] text-white font-semibold hover:border-white/25 transition-colors"
-                >
-                  Акции и сеты
-                </Link>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="inline-flex items-center gap-2 text-brand-text-muted">
+                        <svg className="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2m0 18l6-3m-6 3V2m6 15l6 3m-6-3V2m6 3l-6-3" />
+                        </svg>
+                        Доставка
+                      </span>
+                      <span className="text-white font-bold">35-45 мин</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="inline-flex items-center gap-2 text-brand-text-muted">
+                        <svg className="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M6 7V5a2 2 0 012-2h8a2 2 0 012 2v2m-1 0v10a2 2 0 01-2 2H8a2 2 0 01-2-2V7m3 4h6m-6 4h4" />
+                        </svg>
+                        Самовывоз
+                      </span>
+                      <span className="text-white font-bold">15-20 мин</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-brand-text-muted">
-                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>30–60 мин</span>
-                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>Самовывоз</span>
-                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>Онлайн-оплата</span>
-                <span className="inline-flex items-center gap-2"><span className="text-brand-red">●</span>Популярные сеты</span>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <a
+                  href="#menu"
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-brand-red hover:bg-brand-red-dark transition-colors text-white font-semibold"
+                >
+                  Меню
+                </a>
+                <a
+                  href="#"
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-white/15 bg-white/[0.02] hover:border-white/30 transition-colors text-white font-semibold"
+                >
+                  Приложение
+                </a>
               </div>
             </div>
 
@@ -82,9 +101,6 @@ export default async function HomePage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
 
-                <div className="absolute top-4 left-4 rounded-full bg-brand-red text-white text-xs font-semibold px-3 py-1.5 border border-white/20">
-                  от 30 мин
-                </div>
               </div>
             </div>
           </div>
@@ -93,14 +109,8 @@ export default async function HomePage() {
 
       {/* ───────── MENU ───────── */}
       <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-16">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white">Наше меню</h2>
-            <p className="text-brand-text-muted mt-1">Выберите блюда и добавьте в корзину</p>
-          </div>
-          <Link href="/menu" className="text-brand-red text-sm font-semibold hover:underline hidden sm:block">
-            Всё меню →
-          </Link>
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-black text-white">Меню</h2>
         </div>
 
         {categories.length === 0 ? (
