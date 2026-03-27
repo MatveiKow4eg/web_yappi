@@ -453,3 +453,70 @@ sudo systemctl status yappi-backend yappi-frontend
 
 Если это ваш первый раз и сервисы ещё не созданы:
 
+### Бэкенд сервис
+```bash
+sudo nano /etc/systemd/system/yappi-backend.service
+```
+
+Вставьте:
+```ini
+[Unit]
+Description=Yappi Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/yappi-app/backend
+Environment="NODE_ENV=production"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/node dist/src/app.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Сохраните: `Ctrl+O → Enter → Ctrl+X`
+
+### Фронтенд сервис (если не используете Vercel)
+```bash
+sudo nano /etc/systemd/system/yappi-frontend.service
+```
+
+Вставьте:
+```ini
+[Unit]
+Description=Yappi Frontend Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/yappi-app/frontend
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Сохраните: `Ctrl+O → Enter → Ctrl+X`
+
+### Активируйте сервисы
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start yappi-backend yappi-frontend
+sudo systemctl enable yappi-backend yappi-frontend
+
+# Проверьте статус
+sudo systemctl status yappi-backend yappi-frontend
+```
+
