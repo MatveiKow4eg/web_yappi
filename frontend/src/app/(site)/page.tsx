@@ -23,9 +23,16 @@ export default async function HomePage() {
     <>
       {/* ───────── HERO ───────── */}
       <section className="relative overflow-hidden pt-6 sm:pt-8 pb-10 sm:pb-12">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_18%,rgba(215,38,56,0.2),transparent_38%),linear-gradient(90deg,rgba(13,13,13,0),rgba(17,17,17,0.75)_20%,rgba(17,17,17,0.75)_80%,rgba(13,13,13,0))]" />
+        <div className="pointer-events-none absolute -inset-x-8 -inset-y-10 bg-[radial-gradient(circle_at_16%_20%,rgba(215,38,56,0.2),transparent_40%),linear-gradient(90deg,rgba(13,13,13,0),rgba(17,17,17,0.6)_20%,rgba(17,17,17,0.6)_80%,rgba(13,13,13,0))]" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-y-0 left-0 w-20 sm:w-28 bg-gradient-to-r from-brand-black to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-20 sm:w-28 bg-gradient-to-l from-brand-black to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-16 sm:h-24 bg-gradient-to-b from-brand-black to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-16 sm:h-24 bg-gradient-to-t from-brand-black to-transparent" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center py-2 sm:py-4">
             <div>
               <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-white leading-[1.02] max-w-xl">
