@@ -10,7 +10,7 @@ interface AddToCartButtonProps {
   variant_name?: string;
   image_url?: string;
   unit_price: number;
-  mode?: "full" | "half_half";
+  mode?: "full" | "v1" | "v2";
   selections?: {
     option_item_id: string;
     option_group_name: string;

@@ -11,7 +11,7 @@ type ProductRow = {
   name_ru: string;
   image_url?: string | null;
   base_price: number | string;
-  old_price?: number | string | null;
+  old_price?: never;
   is_active?: boolean;
   is_hidden?: boolean;
   is_available?: boolean;
@@ -131,11 +131,6 @@ export default function AdminProductsTable() {
                       <span className="text-white font-bold">
                         {parseFloat(p.base_price.toString()).toFixed(2)} €
                       </span>
-                      {p.old_price && (
-                        <span className="text-brand-text-muted line-through text-xs ml-1">
-                          {parseFloat(p.old_price.toString()).toFixed(2)} €
-                        </span>
-                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {p.is_active && !p.is_hidden ? (

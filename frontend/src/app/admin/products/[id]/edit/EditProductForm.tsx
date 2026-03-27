@@ -18,14 +18,14 @@ type ProductPayload = {
   description_en: string;
   description_et: string;
   base_price: string;
-  old_price: string;
   image_url: string;
   is_available: boolean;
   is_active: boolean;
   pieces_total: string;
-  allow_half_half: boolean;
-  half_half_price: string;
-  half_half_old_price: string;
+  variant1_pieces: string;
+  variant1_price: string;
+  variant2_pieces: string;
+  variant2_price: string;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
@@ -63,14 +63,14 @@ export default function EditProductForm({ productId }: { productId: string }) {
     description_en: "",
     description_et: "",
     base_price: "",
-    old_price: "",
     image_url: "",
     is_available: true,
     is_active: true,
     pieces_total: "",
-    allow_half_half: false,
-    half_half_price: "",
-    half_half_old_price: "",
+    variant1_pieces: "",
+    variant1_price: "",
+    variant2_pieces: "",
+    variant2_price: "",
   });
 
   useEffect(() => {
@@ -120,14 +120,14 @@ export default function EditProductForm({ productId }: { productId: string }) {
           description_en: product?.description_en || "",
           description_et: product?.description_et || "",
           base_price: product?.base_price?.toString?.() || "",
-          old_price: product?.old_price?.toString?.() || "",
           image_url: product?.image_url || "",
           is_available: Boolean(product?.is_available),
           is_active: Boolean(product?.is_active),
           pieces_total: product?.pieces_total?.toString?.() || "",
-          allow_half_half: Boolean(product?.allow_half_half),
-          half_half_price: product?.half_half_price?.toString?.() || "",
-          half_half_old_price: product?.half_half_old_price?.toString?.() || "",
+          variant1_pieces: product?.variant1_pieces?.toString?.() || "",
+          variant1_price: product?.variant1_price?.toString?.() || "",
+          variant2_pieces: product?.variant2_pieces?.toString?.() || "",
+          variant2_price: product?.variant2_price?.toString?.() || "",
         });
       } catch (e) {
         if (active) setError(e instanceof Error ? e.message : "Ошибка загрузки");
@@ -152,19 +152,18 @@ export default function EditProductForm({ productId }: { productId: string }) {
     setForm((prev) => {
       const next = { ...prev, [name]: newVal } as ProductPayload;
 
-      if (name === "allow_half_half" && checked) {
-        const bp = parseFloat(next.base_price);
-        const op = parseFloat(next.old_price);
-        if (!isNaN(bp)) next.half_half_price = (bp / 2).toFixed(2);
-        if (!isNaN(op) && op > 0) next.half_half_old_price = (op / 2).toFixed(2);
-      }
-      if (name === "base_price" && next.allow_half_half) {
-        const bp = parseFloat(value);
-        if (!isNaN(bp)) next.half_half_price = (bp / 2).toFixed(2);
-      }
-      if (name === "old_price" && next.allow_half_half) {
-        const op = parseFloat(value);
-        next.half_half_old_price = !isNaN(op) && op > 0 ? (op / 2).toFixed(2) : "";
+      const bp = parseFloat(next.base_price);
+      const total = parseInt(next.pieces_total);
+
+      if (["base_price", "pieces_total", "variant1_pieces", "variant2_pieces"].includes(name)) {
+        const v1 = parseInt(next.variant1_pieces);
+        if (!isNaN(bp) && !isNaN(total) && total > 0 && !isNaN(v1) && v1 > 0) {
+          next.variant1_price = ((bp * v1) / total).toFixed(2);
+        }
+        const v2 = parseInt(next.variant2_pieces);
+        if (!isNaN(bp) && !isNaN(total) && total > 0 && !isNaN(v2) && v2 > 0) {
+          next.variant2_price = ((bp * v2) / total).toFixed(2);
+        }
       }
 
       return next;
@@ -184,10 +183,11 @@ export default function EditProductForm({ productId }: { productId: string }) {
         body: JSON.stringify({
           ...form,
           base_price: parseFloat(form.base_price),
-          old_price: form.old_price ? parseFloat(form.old_price) : undefined,
           pieces_total: form.pieces_total ? parseInt(form.pieces_total) : undefined,
-          half_half_price: form.half_half_price ? parseFloat(form.half_half_price) : undefined,
-          half_half_old_price: form.half_half_old_price ? parseFloat(form.half_half_old_price) : undefined,
+          variant1_pieces: form.variant1_pieces ? parseInt(form.variant1_pieces) : undefined,
+          variant1_price: form.variant1_price ? parseFloat(form.variant1_price) : undefined,
+          variant2_pieces: form.variant2_pieces ? parseInt(form.variant2_pieces) : undefined,
+          variant2_price: form.variant2_price ? parseFloat(form.variant2_price) : undefined,
         }),
       });
 
@@ -335,18 +335,6 @@ export default function EditProductForm({ productId }: { productId: string }) {
               step="0.01"
             />
           </div>
-          <div>
-            <label className="block text-sm text-brand-text-muted mb-1.5">Старая цена (€)</label>
-            <input
-              type="number"
-              name="old_price"
-              value={form.old_price}
-              onChange={handleChange}
-              className="input"
-              min="0"
-              step="0.01"
-            />
-          </div>
         </div>
 
         <div className="flex gap-6">
@@ -382,7 +370,7 @@ export default function EditProductForm({ productId }: { productId: string }) {
         <h2 className="font-bold text-white mb-4">Параметры набора</h2>
         <div className="space-y-4">
           <div className="max-w-xs">
-            <label className="block text-sm text-brand-text-muted mb-1.5">Количество кусочков</label>
+            <label className="block text-sm text-brand-text-muted mb-1.5">Количество кусочков (полный набор)</label>
             <input
               type="number"
               name="pieces_total"
@@ -391,91 +379,91 @@ export default function EditProductForm({ productId }: { productId: string }) {
               className="input"
               min="1"
               step="1"
-              placeholder="24"
+              placeholder="12"
             />
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <div
-              onClick={() =>
-                setForm((prev) => {
-                  const next = { ...prev, allow_half_half: !prev.allow_half_half };
-                  if (next.allow_half_half) {
-                    const bp = parseFloat(next.base_price);
-                    const op = parseFloat(next.old_price);
-                    if (!isNaN(bp)) next.half_half_price = (bp / 2).toFixed(2);
-                    if (!isNaN(op) && op > 0) next.half_half_old_price = (op / 2).toFixed(2);
-                  }
-                  return next;
-                })
-              }
-              className={`w-11 h-6 rounded-full transition-colors duration-200 relative cursor-pointer ${
-                form.allow_half_half ? "bg-brand-red" : "bg-brand-gray-mid"
-              }`}
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
-                  form.allow_half_half ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </div>
-            <span className="text-sm text-white">Доступен формат 50/50</span>
-          </label>
+          <p className="text-sm text-brand-text-muted">
+            Дополнительные варианты — цена рассчитается автоматически по пропорции
+          </p>
 
-          {form.allow_half_half && (
-            <div className="space-y-4">
-              {form.pieces_total && parseInt(form.pieces_total) % 2 !== 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs">
-                  ⚠ Количество кусочков нечётное — проверьте корректность 50/50
-                </div>
-              )}
-
-              <div className="rounded-xl bg-brand-gray-mid/50 border border-white/5 p-4 space-y-2 text-sm">
-                <div className="flex justify-between text-white">
-                  <span>Полный набор</span>
-                  <span className="font-bold">
-                    {form.pieces_total ? `${form.pieces_total} шт` : "— шт"} &nbsp;·&nbsp;{" "}
-                    {form.base_price ? `${parseFloat(form.base_price).toFixed(2)} €` : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-brand-text-muted">
-                  <span>Половина 50/50</span>
-                  <span>
-                    {form.pieces_total ? `${Math.floor(parseInt(form.pieces_total) / 2)} шт` : "— шт"}{" "}
-                    &nbsp;·&nbsp;{" "}
-                    {form.half_half_price ? `${parseFloat(form.half_half_price).toFixed(2)} €` : "—"}
-                  </span>
-                </div>
+          {/* Variant 1 */}
+          <div className="rounded-xl bg-brand-gray-mid/40 border border-white/5 p-4 space-y-3">
+            <p className="text-sm font-semibold text-white">Вариант 1</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-brand-text-muted mb-1.5">Кол-во кусочков</label>
+                <input
+                  type="number"
+                  name="variant1_pieces"
+                  value={form.variant1_pieces}
+                  onChange={handleChange}
+                  className="input"
+                  min="1"
+                  step="1"
+                  placeholder="8"
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-brand-text-muted mb-1.5">Цена 50/50 (€)</label>
-                  <input
-                    type="number"
-                    name="half_half_price"
-                    value={form.half_half_price}
-                    onChange={handleChange}
-                    className="input"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-brand-text-muted mb-1.5">Старая цена 50/50 (€)</label>
-                  <input
-                    type="number"
-                    name="half_half_old_price"
-                    value={form.half_half_old_price}
-                    onChange={handleChange}
-                    className="input"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm text-brand-text-muted mb-1.5">Цена (€)</label>
+                <input
+                  type="number"
+                  name="variant1_price"
+                  value={form.variant1_price}
+                  onChange={handleChange}
+                  className="input"
+                  min="0"
+                  step="0.01"
+                  placeholder="авто"
+                />
               </div>
             </div>
-          )}
+            {form.variant1_pieces && form.pieces_total && (
+              <p className="text-xs text-brand-text-muted">
+                {form.variant1_pieces} из {form.pieces_total} шт
+                {form.variant1_price ? ` · ${parseFloat(form.variant1_price).toFixed(2)} €` : ""}
+              </p>
+            )}
+          </div>
+
+          {/* Variant 2 */}
+          <div className="rounded-xl bg-brand-gray-mid/40 border border-white/5 p-4 space-y-3">
+            <p className="text-sm font-semibold text-white">Вариант 2</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-brand-text-muted mb-1.5">Кол-во кусочков</label>
+                <input
+                  type="number"
+                  name="variant2_pieces"
+                  value={form.variant2_pieces}
+                  onChange={handleChange}
+                  className="input"
+                  min="1"
+                  step="1"
+                  placeholder="6"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-brand-text-muted mb-1.5">Цена (€)</label>
+                <input
+                  type="number"
+                  name="variant2_price"
+                  value={form.variant2_price}
+                  onChange={handleChange}
+                  className="input"
+                  min="0"
+                  step="0.01"
+                  placeholder="авто"
+                />
+              </div>
+            </div>
+            {form.variant2_pieces && form.pieces_total && (
+              <p className="text-xs text-brand-text-muted">
+                {form.variant2_pieces} из {form.pieces_total} шт
+                {form.variant2_price ? ` · ${parseFloat(form.variant2_price).toFixed(2)} €` : ""}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

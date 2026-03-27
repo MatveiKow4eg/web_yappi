@@ -37,7 +37,6 @@ export default async function publicProductsRoutes(app: FastifyInstance) {
           description_et: true,
           image_url: true,
           base_price: true,
-          old_price: true,
           is_active: true,
           is_hidden: true,
           is_available: true,
@@ -45,9 +44,10 @@ export default async function publicProductsRoutes(app: FastifyInstance) {
           sku: true,
           sort_order: true,
           pieces_total: true,
-          allow_half_half: true,
-          half_half_price: true,
-          half_half_old_price: true,
+          variant1_pieces: true,
+          variant1_price: true,
+          variant2_pieces: true,
+          variant2_price: true,
           created_at: true,
           updated_at: true,
           category: { select: { slug: true, name_ru: true } },
@@ -59,7 +59,7 @@ export default async function publicProductsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        } as any,
       });
       return ok(reply, products);
     }
@@ -81,7 +81,6 @@ export default async function publicProductsRoutes(app: FastifyInstance) {
         description_et: true,
         image_url: true,
         base_price: true,
-        old_price: true,
         is_active: true,
         is_hidden: true,
         is_available: true,
@@ -89,9 +88,10 @@ export default async function publicProductsRoutes(app: FastifyInstance) {
         sku: true,
         sort_order: true,
         pieces_total: true,
-        allow_half_half: true,
-        half_half_price: true,
-        half_half_old_price: true,
+        variant1_pieces: true,
+        variant1_price: true,
+        variant2_pieces: true,
+        variant2_price: true,
         created_at: true,
         updated_at: true,
         category: { select: { slug: true, name_ru: true } },
@@ -103,7 +103,7 @@ export default async function publicProductsRoutes(app: FastifyInstance) {
             },
           },
         },
-      },
+      } as any,
     });
     if (!product) return err(reply, "Not found", 404);
     return ok(reply, product);

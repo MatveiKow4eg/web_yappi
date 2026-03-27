@@ -107,11 +107,11 @@ export default async function ProductPage({ params }: Props) {
               name={product.name_ru}
               image_url={product.image_url}
               base_price={price}
-              old_price={product.old_price ? parseFloat(product.old_price.toString()) : null}
               pieces_total={(product as any).pieces_total ?? null}
-              allow_half_half={Boolean((product as any).allow_half_half)}
-              half_half_price={(product as any).half_half_price ? parseFloat((product as any).half_half_price.toString()) : null}
-              half_half_old_price={(product as any).half_half_old_price ? parseFloat((product as any).half_half_old_price.toString()) : null}
+              variant1_pieces={(product as any).variant1_pieces ?? null}
+              variant1_price={(product as any).variant1_price ? parseFloat((product as any).variant1_price.toString()) : null}
+              variant2_pieces={(product as any).variant2_pieces ?? null}
+              variant2_price={(product as any).variant2_price ? parseFloat((product as any).variant2_price.toString()) : null}
               is_available={Boolean(product.is_available)}
             />
           </div>

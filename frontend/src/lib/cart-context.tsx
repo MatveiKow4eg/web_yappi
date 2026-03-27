@@ -22,7 +22,7 @@ export interface CartItem {
   image_url?: string;
   unit_price: number;
   quantity: number;
-  mode?: "full" | "half_half";
+  mode?: "full" | "v1" | "v2";
   selections: CartSelection[];
 }
 
@@ -44,7 +44,7 @@ const STORAGE_KEY = "yappi_cart";
 function buildKey(
   product_id: string,
   product_variant_id?: string,
-  mode?: "full" | "half_half",
+  mode?: "full" | "v1" | "v2",
   selections?: CartSelection[]
 ): string {
   const selKey = (selections ?? [])

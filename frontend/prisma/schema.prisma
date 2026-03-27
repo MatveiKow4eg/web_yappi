@@ -86,17 +86,17 @@ model Product {
   description_et String?
   image_url      String?
   base_price     Decimal  @db.Decimal(10, 2)
-  old_price      Decimal? @db.Decimal(10, 2)
   is_active      Boolean  @default(true)
   is_hidden      Boolean  @default(false)
   is_available   Boolean  @default(true)
   is_combo       Boolean  @default(false)
   sku            String?
   sort_order     Int      @default(0)
-  pieces_total       Int?     
-  allow_half_half    Boolean  @default(false)
-  half_half_price    Decimal? @db.Decimal(10, 2)
-  half_half_old_price Decimal? @db.Decimal(10, 2)
+  pieces_total        Int?
+  variant1_pieces     Int?
+  variant1_price      Decimal? @db.Decimal(10, 2)
+  variant2_pieces     Int?
+  variant2_price      Decimal? @db.Decimal(10, 2)
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 

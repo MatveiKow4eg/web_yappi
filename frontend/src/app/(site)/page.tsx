@@ -232,11 +232,6 @@ export default async function HomePage() {
                                 {p.pieces_total} шт
                               </span>
                             )}
-                            {p.old_price && (
-                              <span className="text-brand-text-muted line-through text-xs ml-2">
-                                {parseFloat(p.old_price.toString()).toFixed(2)} €
-                              </span>
-                            )}
                           </div>
                           {p.is_available && (
                             <MenuAddToCart

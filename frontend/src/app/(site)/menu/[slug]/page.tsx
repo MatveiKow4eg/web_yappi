@@ -95,11 +95,6 @@ export default async function CategoryMenuPage({ params }: Props) {
                   <span className="text-brand-red font-bold">
                     {parseFloat(p.base_price.toString()).toFixed(2)} €
                   </span>
-                  {p.old_price && (
-                    <span className="text-brand-text-muted line-through text-xs ml-2">
-                      {parseFloat(p.old_price.toString()).toFixed(2)} €
-                    </span>
-                  )}
                 </div>
                 {p.is_available && (
                   <MenuAddToCart
