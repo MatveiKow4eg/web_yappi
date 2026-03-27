@@ -63,10 +63,10 @@ export default function MenuAddToCart({
           e.preventDefault();
           addItem({ product_id, name, image_url: resolvedImage, unit_price: price, selections: [] });
         }}
-        className="w-8 h-8 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 flex-shrink-0"
+        className="w-10 h-10 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 flex-shrink-0"
         aria-label="Добавить в корзину"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4 7h12.8M7 13L5.4 5M10 19a1 1 0 100 2 1 1 0 000-2zm7 0a1 1 0 100 2 1 1 0 000-2z" />
         </svg>
       </button>
@@ -74,16 +74,16 @@ export default function MenuAddToCart({
   }
 
   return (
-    <div className="w-full">
+    <div className="flex-shrink-0">
       <button
         onClick={(e) => {
           e.preventDefault();
           setOpen((v) => !v);
         }}
-        className="w-8 h-8 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90 ml-auto"
+        className="w-10 h-10 rounded-xl bg-brand-red hover:bg-brand-red-dark flex items-center justify-center text-white transition-all active:scale-90"
         aria-label="Выбрать размер и добавить в корзину"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4 7h12.8M7 13L5.4 5M10 19a1 1 0 100 2 1 1 0 000-2zm7 0a1 1 0 100 2 1 1 0 000-2z" />
         </svg>
       </button>

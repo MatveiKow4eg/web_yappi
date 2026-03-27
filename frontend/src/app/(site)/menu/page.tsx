@@ -75,20 +75,20 @@ export default async function MenuPage() {
                         </span>
                       )}
                     </div>
+                    {p.is_available && (
+                      <MenuAddToCart
+                        product_id={p.id}
+                        name={p.name_ru}
+                        image_url={resolveProductImageSrc(p.image_url) ?? undefined}
+                        price={parseFloat(p.base_price.toString())}
+                        pieces_total={p.pieces_total ?? null}
+                        variant1_pieces={p.variant1_pieces ?? null}
+                        variant1_price={p.variant1_price ? parseFloat(p.variant1_price.toString()) : null}
+                        variant2_pieces={p.variant2_pieces ?? null}
+                        variant2_price={p.variant2_price ? parseFloat(p.variant2_price.toString()) : null}
+                      />
+                    )}
                   </div>
-                  {p.is_available && (
-                    <MenuAddToCart
-                      product_id={p.id}
-                      name={p.name_ru}
-                      image_url={resolveProductImageSrc(p.image_url) ?? undefined}
-                      price={parseFloat(p.base_price.toString())}
-                      pieces_total={p.pieces_total ?? null}
-                      variant1_pieces={p.variant1_pieces ?? null}
-                      variant1_price={p.variant1_price ? parseFloat(p.variant1_price.toString()) : null}
-                      variant2_pieces={p.variant2_pieces ?? null}
-                      variant2_price={p.variant2_price ? parseFloat(p.variant2_price.toString()) : null}
-                    />
-                  )}
                 </div>
               </div>
             ))}
