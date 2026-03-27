@@ -93,6 +93,10 @@ model Product {
   is_combo       Boolean  @default(false)
   sku            String?
   sort_order     Int      @default(0)
+  pieces_total       Int?     
+  allow_half_half    Boolean  @default(false)
+  half_half_price    Decimal? @db.Decimal(10, 2)
+  half_half_old_price Decimal? @db.Decimal(10, 2)
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 

@@ -22,6 +22,10 @@ type ProductPayload = {
   image_url: string;
   is_available: boolean;
   is_active: boolean;
+  pieces_total: string;
+  allow_half_half: boolean;
+  half_half_price: string;
+  half_half_old_price: string;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
@@ -63,6 +67,10 @@ export default function EditProductForm({ productId }: { productId: string }) {
     image_url: "",
     is_available: true,
     is_active: true,
+    pieces_total: "",
+    allow_half_half: false,
+    half_half_price: "",
+    half_half_old_price: "",
   });
 
   useEffect(() => {
@@ -116,6 +124,10 @@ export default function EditProductForm({ productId }: { productId: string }) {
           image_url: product?.image_url || "",
           is_available: Boolean(product?.is_available),
           is_active: Boolean(product?.is_active),
+          pieces_total: product?.pieces_total?.toString?.() || "",
+          allow_half_half: Boolean(product?.allow_half_half),
+          half_half_price: product?.half_half_price?.toString?.() || "",
+          half_half_old_price: product?.half_half_old_price?.toString?.() || "",
         });
       } catch (e) {
         if (active) setError(e instanceof Error ? e.message : "Ошибка загрузки");
@@ -134,10 +146,29 @@ export default function EditProductForm({ productId }: { productId: string }) {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
     const { name, value, type } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
+    const checked = type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
+    const newVal = type === "checkbox" ? checked : value;
+
+    setForm((prev) => {
+      const next = { ...prev, [name]: newVal } as ProductPayload;
+
+      if (name === "allow_half_half" && checked) {
+        const bp = parseFloat(next.base_price);
+        const op = parseFloat(next.old_price);
+        if (!isNaN(bp)) next.half_half_price = (bp / 2).toFixed(2);
+        if (!isNaN(op) && op > 0) next.half_half_old_price = (op / 2).toFixed(2);
+      }
+      if (name === "base_price" && next.allow_half_half) {
+        const bp = parseFloat(value);
+        if (!isNaN(bp)) next.half_half_price = (bp / 2).toFixed(2);
+      }
+      if (name === "old_price" && next.allow_half_half) {
+        const op = parseFloat(value);
+        next.half_half_old_price = !isNaN(op) && op > 0 ? (op / 2).toFixed(2) : "";
+      }
+
+      return next;
+    });
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -154,6 +185,9 @@ export default function EditProductForm({ productId }: { productId: string }) {
           ...form,
           base_price: parseFloat(form.base_price),
           old_price: form.old_price ? parseFloat(form.old_price) : undefined,
+          pieces_total: form.pieces_total ? parseInt(form.pieces_total) : undefined,
+          half_half_price: form.half_half_price ? parseFloat(form.half_half_price) : undefined,
+          half_half_old_price: form.half_half_old_price ? parseFloat(form.half_half_old_price) : undefined,
         }),
       });
 
@@ -342,6 +376,108 @@ export default function EditProductForm({ productId }: { productId: string }) {
           {error}
         </div>
       )}
+
+      {/* Set parameters */}
+      <div className="card p-6">
+        <h2 className="font-bold text-white mb-4">Параметры набора</h2>
+        <div className="space-y-4">
+          <div className="max-w-xs">
+            <label className="block text-sm text-brand-text-muted mb-1.5">Количество кусочков</label>
+            <input
+              type="number"
+              name="pieces_total"
+              value={form.pieces_total}
+              onChange={handleChange}
+              className="input"
+              min="1"
+              step="1"
+              placeholder="24"
+            />
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div
+              onClick={() =>
+                setForm((prev) => {
+                  const next = { ...prev, allow_half_half: !prev.allow_half_half };
+                  if (next.allow_half_half) {
+                    const bp = parseFloat(next.base_price);
+                    const op = parseFloat(next.old_price);
+                    if (!isNaN(bp)) next.half_half_price = (bp / 2).toFixed(2);
+                    if (!isNaN(op) && op > 0) next.half_half_old_price = (op / 2).toFixed(2);
+                  }
+                  return next;
+                })
+              }
+              className={`w-11 h-6 rounded-full transition-colors duration-200 relative cursor-pointer ${
+                form.allow_half_half ? "bg-brand-red" : "bg-brand-gray-mid"
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                  form.allow_half_half ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </div>
+            <span className="text-sm text-white">Доступен формат 50/50</span>
+          </label>
+
+          {form.allow_half_half && (
+            <div className="space-y-4">
+              {form.pieces_total && parseInt(form.pieces_total) % 2 !== 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs">
+                  ⚠ Количество кусочков нечётное — проверьте корректность 50/50
+                </div>
+              )}
+
+              <div className="rounded-xl bg-brand-gray-mid/50 border border-white/5 p-4 space-y-2 text-sm">
+                <div className="flex justify-between text-white">
+                  <span>Полный набор</span>
+                  <span className="font-bold">
+                    {form.pieces_total ? `${form.pieces_total} шт` : "— шт"} &nbsp;·&nbsp;{" "}
+                    {form.base_price ? `${parseFloat(form.base_price).toFixed(2)} €` : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-brand-text-muted">
+                  <span>Половина 50/50</span>
+                  <span>
+                    {form.pieces_total ? `${Math.floor(parseInt(form.pieces_total) / 2)} шт` : "— шт"}{" "}
+                    &nbsp;·&nbsp;{" "}
+                    {form.half_half_price ? `${parseFloat(form.half_half_price).toFixed(2)} €` : "—"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-brand-text-muted mb-1.5">Цена 50/50 (€)</label>
+                  <input
+                    type="number"
+                    name="half_half_price"
+                    value={form.half_half_price}
+                    onChange={handleChange}
+                    className="input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-brand-text-muted mb-1.5">Старая цена 50/50 (€)</label>
+                  <input
+                    type="number"
+                    name="half_half_old_price"
+                    value={form.half_half_old_price}
+                    onChange={handleChange}
+                    className="input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="flex gap-3">
         <button type="submit" disabled={saving} className="btn-primary py-3 px-8">

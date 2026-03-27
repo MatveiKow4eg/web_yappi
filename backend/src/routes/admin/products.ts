@@ -33,6 +33,10 @@ const ProductSchema = z.object({
   is_available: z.boolean().optional().default(true),
   sort_order: z.number().int().optional().default(0),
   sku: z.string().optional(),
+  pieces_total: z.number().int().positive().optional(),
+  allow_half_half: z.boolean().optional().default(false),
+  half_half_price: z.number().positive().optional(),
+  half_half_old_price: z.number().positive().optional(),
 });
 
 const UpdateSchema = ProductSchema.partial();
