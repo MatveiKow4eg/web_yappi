@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 
 const nav = [
@@ -12,28 +13,58 @@ const nav = [
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
   const { totalItems } = useCart();
 
+  useEffect(() => {
+    function onScroll() {
+      const currentScrollY = window.scrollY;
+
+      // Keep header visible near the top and avoid flicker on tiny scroll changes.
+      if (currentScrollY < 24) {
+        setIsVisible(true);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      const delta = currentScrollY - lastScrollY.current;
+      if (Math.abs(delta) < 6) return;
+
+      if (delta > 0) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 bg-brand-black">
+    <header className={`sticky top-0 z-50 bg-brand-black transition-transform duration-300 ${isVisible || open ? "translate-y-0" : "-translate-y-full"}`}>
       <div className="max-w-7xl mx-auto">
-        <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-3">
-            <Link href="/" className="flex items-center gap-3 min-w-0 flex-shrink-0">
-              <span className="w-10 h-10 rounded-md bg-brand-red text-white font-black text-sm flex items-center justify-center">
-                YS
-              </span>
-              <div className="min-w-0">
-                <p className="text-white font-bold leading-none">Yappi Sushi</p>
-                <p className="text-[11px] text-brand-text-muted leading-none mt-1">delivery and pickup</p>
-              </div>
+        <div className="h-[72px] sm:h-[84px] px-4 sm:px-6 flex items-center justify-between gap-3">
+            <Link href="/" className="flex items-center min-w-0 flex-shrink-0">
+              <Image
+                src="/images/sushi/logo.png"
+                alt="Yappi Sushi"
+                width={320}
+                height={80}
+                className="h-14 sm:h-[72px] w-auto object-contain"
+                priority
+              />
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-6">
+            <nav className="hidden lg:flex items-center gap-7">
               {nav.map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}
-                  className="text-sm font-medium text-brand-text-muted hover:text-white transition-colors"
+                  className="text-base font-semibold text-brand-text-muted hover:text-white transition-colors"
                 >
                   {n.label}
                 </Link>
@@ -43,7 +74,7 @@ export default function Header() {
             <div className="flex items-center gap-2 sm:gap-3">
               <a
                 href="tel:+37250000000"
-                className="hidden xl:inline-flex items-center gap-2 px-3 py-2 text-sm text-white"
+                className="hidden xl:inline-flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-white"
               >
                 <span className="text-brand-red">•</span>
                 +372 5000 0000
