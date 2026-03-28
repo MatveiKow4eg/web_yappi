@@ -55,7 +55,9 @@ export default function KitchenPage() {
   const [pickupMinutes, setPickupMinutes] = useState("20");
   const [deliveryMinutes, setDeliveryMinutes] = useState("45");
   const [savingTimes, setSavingTimes] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showOrderTimeEditor, setShowOrderTimeEditor] = useState(false);
+  const [closingDay, setClosingDay] = useState(false);
+  const [openingDay, setOpeningDay] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -114,19 +116,39 @@ export default function KitchenPage() {
     return () => clearInterval(interval);
   }, [fetchSession, fetchOrders]);
 
-  async function toggleDay() {
+  useEffect(() => {
+    if (!loadingSession && session && !session.kitchen_is_open) {
+      loadShiftStats();
+    }
+  }, [loadingSession, session]);
+
+  async function openDay() {
     if (!session) return;
+    setOpeningDay(true);
     try {
-      const updated = session.kitchen_is_open
-        ? await AppApi.admin.kitchen.endDay()
-        : await AppApi.admin.kitchen.startDay();
+      const updated = await AppApi.admin.kitchen.startDay();
       setSession(updated);
       sessionRef.current = updated;
-      if (updated.kitchen_is_open) {
-        setShiftStats(null);
-      }
-      fetchOrders();
+      setShiftStats(null);
+      setShowOrderTimeEditor(false);
+      await fetchOrders();
     } catch {}
+    setOpeningDay(false);
+  }
+
+  async function closeDay() {
+    if (!session || !session.kitchen_is_open) return;
+    setClosingDay(true);
+    try {
+      const updated = await AppApi.admin.kitchen.endDay();
+      setSession(updated);
+      sessionRef.current = updated;
+      setShowOrderTimeEditor(false);
+      setSelectedId(null);
+      await fetchOrders();
+      await loadShiftStats();
+    } catch {}
+    setClosingDay(false);
   }
 
   async function saveKitchenTimes() {
@@ -142,7 +164,7 @@ export default function KitchenPage() {
       });
       setSession(updated);
       sessionRef.current = updated;
-      setSettingsOpen(false);
+      setShowOrderTimeEditor(false);
     } catch {}
     setSavingTimes(false);
   }
@@ -215,113 +237,137 @@ export default function KitchenPage() {
   const selectedOrder = allOrders.find((o) => o.id === selectedId) ?? null;
 
   return (
-    <div className="h-screen bg-brand-black overflow-hidden relative">
-      <button
-        onClick={() => setSettingsOpen(true)}
-        className="absolute top-4 right-4 z-30 w-12 h-12 rounded-full bg-brand-red text-white text-2xl leading-none flex items-center justify-center shadow-lg shadow-brand-red/30 hover:scale-105 transition-transform"
-        aria-label="Настройки кухни"
-      >
-        ⚙
-      </button>
+    <div className="h-screen bg-brand-black overflow-hidden relative flex flex-col">
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-white/5 bg-brand-gray-dark/20">
+        <div className="max-w-5xl">
+          <p className="text-xs text-brand-text-muted uppercase tracking-widest mb-2">Управление сменой</p>
 
-      {settingsOpen && (
-        <div className="absolute inset-0 z-40 bg-black/65 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-brand-gray-dark p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white text-lg font-black">Управление сменой</h2>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                className="text-brand-text-muted hover:text-white text-sm"
-              >
-                Закрыть
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              <label className="card p-3">
-                <span className="block text-xs text-brand-text-muted mb-1">Самовывоз, мин</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={240}
-                  value={pickupMinutes}
-                  onChange={(e) => setPickupMinutes(e.target.value)}
-                  className="input text-sm"
-                />
-              </label>
-              <label className="card p-3">
-                <span className="block text-xs text-brand-text-muted mb-1">Доставка, мин</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={240}
-                  value={deliveryMinutes}
-                  onChange={(e) => setDeliveryMinutes(e.target.value)}
-                  className="input text-sm"
-                />
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-              <button onClick={saveKitchenTimes} disabled={savingTimes} className="btn-primary py-2.5">
-                {savingTimes ? "Сохранение..." : "Сохранить время готовки"}
-              </button>
-              <button onClick={loadHistoryByDays} disabled={historyLoading} className="btn-secondary py-2.5">
-                {historyLoading ? "Загрузка..." : "История заказов по дням"}
-              </button>
-              <button onClick={toggleDay} className={session?.kitchen_is_open ? "btn-secondary py-2.5" : "btn-primary py-2.5"}>
-                {session?.kitchen_is_open ? "Закрыть смену" : "Открыть смену"}
-              </button>
-              {!session?.kitchen_is_open && (
-                <button onClick={loadShiftStats} disabled={statsLoading} className="btn-secondary py-2.5">
-                  {statsLoading ? "Загрузка..." : "Статистика смены"}
+          {loadingSession ? (
+            <p className="text-sm text-brand-text-muted">Загрузка статуса смены...</p>
+          ) : session?.kitchen_is_open ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setShowOrderTimeEditor((prev) => !prev)}
+                  className={showOrderTimeEditor ? "btn-secondary py-2.5" : "btn-primary py-2.5"}
+                >
+                  Время заказов
                 </button>
+                <button onClick={closeDay} disabled={closingDay} className="btn-secondary py-2.5">
+                  {closingDay ? "Закрываем смену..." : "Закрыть смену"}
+                </button>
+                <button onClick={loadHistoryByDays} disabled={historyLoading} className="btn-secondary py-2.5">
+                  {historyLoading ? "Загрузка..." : "Посмотреть историю"}
+                </button>
+              </div>
+
+              {showOrderTimeEditor && (
+                <div className="mt-3 card p-3 max-w-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label>
+                      <span className="block text-xs text-brand-text-muted mb-1">Самовывоз, мин</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={240}
+                        value={pickupMinutes}
+                        onChange={(e) => setPickupMinutes(e.target.value)}
+                        className="input text-sm"
+                      />
+                    </label>
+                    <label>
+                      <span className="block text-xs text-brand-text-muted mb-1">Доставка, мин</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={240}
+                        value={deliveryMinutes}
+                        onChange={(e) => setDeliveryMinutes(e.target.value)}
+                        className="input text-sm"
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-3">
+                    <button onClick={saveKitchenTimes} disabled={savingTimes} className="btn-primary py-2.5 w-full sm:w-auto">
+                      {savingTimes ? "Сохранение..." : "Сохранить время"}
+                    </button>
+                  </div>
+                </div>
               )}
+            </>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={openDay} disabled={openingDay} className="btn-primary py-2.5">
+                  {openingDay ? "Открываем смену..." : "Открыть смену"}
+                </button>
+                <button onClick={loadHistoryByDays} disabled={historyLoading} className="btn-secondary py-2.5">
+                  {historyLoading ? "Загрузка..." : "Посмотреть историю"}
+                </button>
+                <button onClick={loadShiftStats} disabled={statsLoading} className="btn-secondary py-2.5">
+                  {statsLoading ? "Загрузка..." : "Статистика последней смены"}
+                </button>
+              </div>
+
+              <p className="text-xs text-brand-text-muted mt-2">
+                Смена закрыта. Откройте новую смену или посмотрите историю и статистику последней смены.
+              </p>
+            </>
+          )}
+
+          {shiftStats && (
+            <div className="card p-3 mt-3 max-w-3xl">
+              <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">
+                Статистика смены
+                {shiftStats.shift_started_at
+                  ? ` (${new Date(shiftStats.shift_started_at).toLocaleDateString("ru-RU")})`
+                  : ""}
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-brand-text-muted text-xs">Заказы</p>
+                  <p className="text-white font-black text-xl">{shiftStats.orders_count}</p>
+                </div>
+                <div>
+                  <p className="text-brand-text-muted text-xs">Роллы, шт</p>
+                  <p className="text-white font-black text-xl">{shiftStats.rolls_count}</p>
+                </div>
+                <div>
+                  <p className="text-brand-text-muted text-xs">Тотал чек</p>
+                  <p className="text-brand-red font-black text-xl">{Number(shiftStats.total_revenue).toFixed(2)} €</p>
+                </div>
+              </div>
             </div>
+          )}
 
-            {shiftStats && (
-              <div className="card p-3 mb-3">
-                <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">Статистика смены</p>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <p className="text-brand-text-muted text-xs">Заказы</p>
-                    <p className="text-white font-black text-xl">{shiftStats.orders_count}</p>
+          {historyByDay.length > 0 && (
+            <div className="card p-3 mt-3 max-w-3xl max-h-64 overflow-y-auto">
+              <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">История по дням</p>
+              <div className="space-y-2">
+                {historyByDay.map((row) => (
+                  <div key={row.dayKey} className="flex items-center justify-between text-sm">
+                    <span className="text-white">{row.dayLabel}</span>
+                    <span className="text-brand-text-muted">{row.orders} заказов</span>
+                    <span className="text-brand-text-muted">{row.rolls} шт</span>
+                    <span className="text-brand-red font-semibold">{row.total.toFixed(2)} €</span>
                   </div>
-                  <div>
-                    <p className="text-brand-text-muted text-xs">Роллы, шт</p>
-                    <p className="text-white font-black text-xl">{shiftStats.rolls_count}</p>
-                  </div>
-                  <div>
-                    <p className="text-brand-text-muted text-xs">Тотал чек</p>
-                    <p className="text-brand-red font-black text-xl">{Number(shiftStats.total_revenue).toFixed(2)} €</p>
-                  </div>
-                </div>
+                ))}
               </div>
-            )}
-
-            {historyByDay.length > 0 && (
-              <div className="card p-3 max-h-64 overflow-y-auto">
-                <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">История по дням</p>
-                <div className="space-y-2">
-                  {historyByDay.map((row) => (
-                    <div key={row.dayKey} className="flex items-center justify-between text-sm">
-                      <span className="text-white">{row.dayLabel}</span>
-                      <span className="text-brand-text-muted">{row.orders} заказов</span>
-                      <span className="text-brand-text-muted">{row.rolls} шт</span>
-                      <span className="text-brand-red font-semibold">{row.total.toFixed(2)} €</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      <div className="flex h-full overflow-hidden md:flex-row flex-col pt-2">
+      <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
         {/* LEFT — detail panel */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          {activeCount === 0 && allOrders.length === 0 ? (
+          {!session?.kitchen_is_open ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-5xl mb-4">🌙</div>
+              <p className="text-white font-bold text-xl mb-1">Смена закрыта</p>
+              <p className="text-brand-text-muted">Нажмите «Открыть смену», чтобы начать новый день</p>
+            </div>
+          ) : activeCount === 0 && allOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-5xl mb-4">✅</div>
               <p className="text-white font-bold text-xl mb-1">Всё готово</p>
