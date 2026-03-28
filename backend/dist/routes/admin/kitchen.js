@@ -5,7 +5,8 @@ const zod_1 = require("zod");
 const prisma_1 = require("../../lib/prisma");
 const session_1 = require("../../lib/session");
 const KitchenSettingsSchema = zod_1.z.object({
-    kitchen_default_prep_minutes: zod_1.z.number().int().min(1).max(240),
+    kitchen_default_prep_minutes: zod_1.z.number().int().min(1).max(240).optional(),
+    kitchen_delivery_prep_minutes: zod_1.z.number().int().min(1).max(240).optional(),
 });
 async function ensureSettings() {
     let settings = await prisma_1.prisma.restaurantSettings.findFirst();
@@ -16,6 +17,18 @@ async function ensureSettings() {
     }
     return settings;
 }
+function kitchenPayload(s) {
+    return {
+        kitchen_is_open: s.kitchen_is_open,
+        kitchen_day_started_at: s.kitchen_day_started_at,
+        kitchen_day_ended_at: s.kitchen_day_ended_at,
+        kitchen_default_prep_minutes: s.kitchen_default_prep_minutes,
+        kitchen_delivery_prep_minutes: s.min_delivery_time_minutes,
+        min_delivery_time_minutes: s.min_delivery_time_minutes,
+        max_delivery_time_minutes: s.max_delivery_time_minutes,
+        server_time: new Date().toISOString(),
+    };
+}
 async function adminKitchenRoutes(app) {
     app.get("/kitchen", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
@@ -24,14 +37,7 @@ async function adminKitchenRoutes(app) {
         if (!(0, session_1.requireRoles)(session, reply, ["admin", "kitchen"]))
             return;
         const settings = await ensureSettings();
-        return (0, session_1.ok)(reply, {
-            kitchen_is_open: settings.kitchen_is_open,
-            kitchen_day_started_at: settings.kitchen_day_started_at,
-            kitchen_day_ended_at: settings.kitchen_day_ended_at,
-            kitchen_default_prep_minutes: settings.kitchen_default_prep_minutes,
-            min_delivery_time_minutes: settings.min_delivery_time_minutes,
-            max_delivery_time_minutes: settings.max_delivery_time_minutes,
-        });
+        return (0, session_1.ok)(reply, kitchenPayload(settings));
     });
     app.post("/kitchen/start-day", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
@@ -45,7 +51,7 @@ async function adminKitchenRoutes(app) {
             where: { id: settings.id },
             data: {
                 kitchen_is_open: true,
-                kitchen_day_started_at: settings.kitchen_day_started_at ?? now,
+                kitchen_day_started_at: now,
                 kitchen_day_ended_at: null,
             },
         });
@@ -57,14 +63,7 @@ async function adminKitchenRoutes(app) {
                 entity_id: updated.id,
             },
         });
-        return (0, session_1.ok)(reply, {
-            kitchen_is_open: updated.kitchen_is_open,
-            kitchen_day_started_at: updated.kitchen_day_started_at,
-            kitchen_day_ended_at: updated.kitchen_day_ended_at,
-            kitchen_default_prep_minutes: updated.kitchen_default_prep_minutes,
-            min_delivery_time_minutes: updated.min_delivery_time_minutes,
-            max_delivery_time_minutes: updated.max_delivery_time_minutes,
-        });
+        return (0, session_1.ok)(reply, kitchenPayload(updated));
     });
     app.post("/kitchen/end-day", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
@@ -91,14 +90,7 @@ async function adminKitchenRoutes(app) {
                 entity_id: updated.id,
             },
         });
-        return (0, session_1.ok)(reply, {
-            kitchen_is_open: updated.kitchen_is_open,
-            kitchen_day_started_at: updated.kitchen_day_started_at,
-            kitchen_day_ended_at: updated.kitchen_day_ended_at,
-            kitchen_default_prep_minutes: updated.kitchen_default_prep_minutes,
-            min_delivery_time_minutes: updated.min_delivery_time_minutes,
-            max_delivery_time_minutes: updated.max_delivery_time_minutes,
-        });
+        return (0, session_1.ok)(reply, kitchenPayload(updated));
     });
     app.patch("/kitchen/settings", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
@@ -110,10 +102,19 @@ async function adminKitchenRoutes(app) {
         if (!parsed.success)
             return (0, session_1.err)(reply, parsed.error.message);
         const settings = await ensureSettings();
+        const deliveryMinutes = parsed.data.kitchen_delivery_prep_minutes;
         const updated = await prisma_1.prisma.restaurantSettings.update({
             where: { id: settings.id },
             data: {
-                kitchen_default_prep_minutes: parsed.data.kitchen_default_prep_minutes,
+                ...(parsed.data.kitchen_default_prep_minutes
+                    ? { kitchen_default_prep_minutes: parsed.data.kitchen_default_prep_minutes }
+                    : {}),
+                ...(deliveryMinutes
+                    ? {
+                        min_delivery_time_minutes: deliveryMinutes,
+                        max_delivery_time_minutes: deliveryMinutes,
+                    }
+                    : {}),
             },
         });
         await prisma_1.prisma.adminActionLog.create({
@@ -125,13 +126,59 @@ async function adminKitchenRoutes(app) {
                 payload_json: parsed.data,
             },
         });
+        return (0, session_1.ok)(reply, kitchenPayload(updated));
+    });
+    app.get("/kitchen/shift-stats", async (req, reply) => {
+        const session = await (0, session_1.getAdminSession)(req);
+        if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin", "kitchen"]))
+            return;
+        const settings = await ensureSettings();
+        if (!settings.kitchen_day_started_at) {
+            return (0, session_1.ok)(reply, {
+                has_shift: false,
+                shift_started_at: null,
+                shift_ended_at: null,
+                orders_count: 0,
+                rolls_count: 0,
+                total_revenue: 0,
+            });
+        }
+        const from = settings.kitchen_day_started_at;
+        const to = settings.kitchen_day_ended_at ?? new Date();
+        const activeStatuses = ["new", "confirmed_preparing", "ready", "sent", "completed"];
+        const [ordersCount, sumRevenue, sumRolls] = await Promise.all([
+            prisma_1.prisma.order.count({
+                where: {
+                    created_at: { gte: from, lte: to },
+                    status: { in: [...activeStatuses] },
+                },
+            }),
+            prisma_1.prisma.order.aggregate({
+                where: {
+                    created_at: { gte: from, lte: to },
+                    status: { in: [...activeStatuses] },
+                },
+                _sum: { total_amount: true },
+            }),
+            prisma_1.prisma.orderItem.aggregate({
+                where: {
+                    order: {
+                        created_at: { gte: from, lte: to },
+                        status: { in: [...activeStatuses] },
+                    },
+                },
+                _sum: { quantity: true },
+            }),
+        ]);
         return (0, session_1.ok)(reply, {
-            kitchen_is_open: updated.kitchen_is_open,
-            kitchen_day_started_at: updated.kitchen_day_started_at,
-            kitchen_day_ended_at: updated.kitchen_day_ended_at,
-            kitchen_default_prep_minutes: updated.kitchen_default_prep_minutes,
-            min_delivery_time_minutes: updated.min_delivery_time_minutes,
-            max_delivery_time_minutes: updated.max_delivery_time_minutes,
+            has_shift: true,
+            shift_started_at: from,
+            shift_ended_at: settings.kitchen_day_ended_at,
+            orders_count: ordersCount,
+            rolls_count: sumRolls._sum.quantity ?? 0,
+            total_revenue: Number(sumRevenue._sum.total_amount ?? 0),
         });
     });
 }

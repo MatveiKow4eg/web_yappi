@@ -307,6 +307,12 @@ async function publicOrdersRoutes(app) {
         if (!parsed.success)
             return (0, session_1.err)(reply, parsed.error.message);
         const body = parsed.data;
+        const kitchenSettings = await prisma_1.prisma.restaurantSettings.findFirst({
+            select: { kitchen_is_open: true },
+        });
+        if (!kitchenSettings?.kitchen_is_open) {
+            return (0, session_1.err)(reply, "Кухня сейчас закрыта. Заказы не принимаются.", 503);
+        }
         if (body.type === "delivery" && !body.address_line) {
             return (0, session_1.err)(reply, "Адрес доставки обязателен", 422);
         }

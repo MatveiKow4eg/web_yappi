@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { AppApi, type Order, type KitchenState } from "@/lib/api-client";
+import { AppApi, type Order, type KitchenShiftStats, type KitchenState } from "@/lib/api-client";
 import KitchenOrderActions from "./KitchenOrderActions";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -52,16 +52,16 @@ export default function KitchenPage() {
   const [session, setSession] = useState<KitchenState | null>(null);
   const sessionRef = useRef<KitchenState | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [cookMinutes, setCookMinutes] = useState("");
-  const [editingCookTime, setEditingCookTime] = useState(false);
+  const [pickupMinutes, setPickupMinutes] = useState("20");
+  const [deliveryMinutes, setDeliveryMinutes] = useState("45");
+  const [savingTimes, setSavingTimes] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [clock, setClock] = useState(() => new Date());
-
-  useEffect(() => {
-    const t = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyByDay, setHistoryByDay] = useState<Array<{ dayKey: string; dayLabel: string; orders: number; rolls: number; total: number }>>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [shiftStats, setShiftStats] = useState<KitchenShiftStats | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -99,7 +99,8 @@ export default function KitchenPage() {
       const s = await AppApi.admin.kitchen.get();
       setSession(s);
       sessionRef.current = s;
-      setCookMinutes(String(s.kitchen_default_prep_minutes));
+      setPickupMinutes(String(s.kitchen_default_prep_minutes));
+      setDeliveryMinutes(String(s.kitchen_delivery_prep_minutes ?? s.min_delivery_time_minutes ?? 45));
     } catch {
     } finally {
       setLoadingSession(false);
@@ -121,20 +122,91 @@ export default function KitchenPage() {
         : await AppApi.admin.kitchen.startDay();
       setSession(updated);
       sessionRef.current = updated;
+      if (updated.kitchen_is_open) {
+        setShiftStats(null);
+      }
       fetchOrders();
     } catch {}
   }
 
-  async function saveCookTime() {
-    const minutes = parseInt(cookMinutes, 10);
-    if (!minutes || minutes < 1) return;
+  async function saveKitchenTimes() {
+    const pickup = parseInt(pickupMinutes, 10);
+    const delivery = parseInt(deliveryMinutes, 10);
+    if (!pickup || pickup < 1 || !delivery || delivery < 1) return;
+
+    setSavingTimes(true);
     try {
       const updated = await AppApi.admin.kitchen.updateSettings({
-        kitchen_default_prep_minutes: minutes,
+        kitchen_default_prep_minutes: pickup,
+        kitchen_delivery_prep_minutes: delivery,
       });
       setSession(updated);
-      setEditingCookTime(false);
+      sessionRef.current = updated;
+      setSettingsOpen(false);
     } catch {}
+    setSavingTimes(false);
+  }
+
+  async function loadHistoryByDays() {
+    setHistoryLoading(true);
+    try {
+      const res = await AppApi.admin.orders.list({
+        statuses: "new,confirmed_preparing,ready,sent,completed,cancelled",
+        limit: 0,
+      });
+
+      const daily = new Map<string, { dayLabel: string; orders: number; rolls: number; total: number }>();
+      for (const order of res.orders) {
+        if (order.status === "cancelled" || order.status === "payment_failed" || order.status === "expired") continue;
+        const dayKey = new Date(order.created_at).toLocaleDateString("en-CA", {
+          timeZone: "Europe/Tallinn",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+        const dayDate = new Date(order.created_at);
+        const ddmmyyyy = dayDate.toLocaleDateString("ru-RU", {
+          timeZone: "Europe/Tallinn",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        const weekday = dayDate.toLocaleDateString("ru-RU", {
+          timeZone: "Europe/Tallinn",
+          weekday: "short",
+        });
+        const weekdayTitle = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace(".", "");
+        const dayLabel = `${ddmmyyyy} (${weekdayTitle})`;
+        const prev = daily.get(dayKey) ?? { dayLabel, orders: 0, rolls: 0, total: 0 };
+        daily.set(dayKey, {
+          dayLabel: prev.dayLabel,
+          orders: prev.orders + 1,
+          rolls: prev.rolls + order.items.reduce((sum, item) => sum + item.quantity, 0),
+          total: prev.total + Number(order.total_amount),
+        });
+      }
+
+      const rows = Array.from(daily.entries())
+        .sort(([a], [b]) => (a < b ? 1 : -1))
+        .map(([dayKey, values]) => ({ dayKey, ...values }));
+      setHistoryByDay(rows);
+    } catch {
+      setHistoryByDay([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function loadShiftStats() {
+    setStatsLoading(true);
+    try {
+      const stats = await AppApi.admin.kitchen.shiftStats();
+      setShiftStats(stats);
+    } catch {
+      setShiftStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
   }
 
   const allOrders = orders;
@@ -143,134 +215,112 @@ export default function KitchenPage() {
   const selectedOrder = allOrders.find((o) => o.id === selectedId) ?? null;
 
   return (
-    <div className="h-screen bg-brand-black flex flex-col overflow-hidden">
-      {/* ── Top bar ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-brand-red font-black text-2xl">YS</span>
-          <h1 className="text-lg font-black text-white">Кухня</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span
-            className={`flex items-center gap-1.5 text-xs ${
-              session?.kitchen_is_open ? "text-green-400" : "text-brand-text-muted"
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full inline-block ${
-                session?.kitchen_is_open ? "bg-green-400 animate-pulse" : "bg-gray-500"
-              }`}
-            />
-            {session?.kitchen_is_open ? "Смена открыта" : "Смена закрыта"}
-          </span>
-          {!loadingSession && (
-            <>
-              <button onClick={fetchOrders} className="btn-secondary text-xs py-1.5 px-3">
-                🔄
-              </button>
+    <div className="h-screen bg-brand-black overflow-hidden relative">
+      <button
+        onClick={() => setSettingsOpen(true)}
+        className="absolute top-4 right-4 z-30 w-12 h-12 rounded-full bg-brand-red text-white text-2xl leading-none flex items-center justify-center shadow-lg shadow-brand-red/30 hover:scale-105 transition-transform"
+        aria-label="Настройки кухни"
+      >
+        ⚙
+      </button>
+
+      {settingsOpen && (
+        <div className="absolute inset-0 z-40 bg-black/65 flex items-center justify-center p-4">
+          <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-brand-gray-dark p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white text-lg font-black">Управление сменой</h2>
               <button
-                onClick={toggleDay}
-                className={
-                  session?.kitchen_is_open
-                    ? "btn-secondary text-xs py-1.5 px-3"
-                    : "btn-primary text-xs py-1.5 px-3"
-                }
+                onClick={() => setSettingsOpen(false)}
+                className="text-brand-text-muted hover:text-white text-sm"
               >
+                Закрыть
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <label className="card p-3">
+                <span className="block text-xs text-brand-text-muted mb-1">Самовывоз, мин</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={240}
+                  value={pickupMinutes}
+                  onChange={(e) => setPickupMinutes(e.target.value)}
+                  className="input text-sm"
+                />
+              </label>
+              <label className="card p-3">
+                <span className="block text-xs text-brand-text-muted mb-1">Доставка, мин</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={240}
+                  value={deliveryMinutes}
+                  onChange={(e) => setDeliveryMinutes(e.target.value)}
+                  className="input text-sm"
+                />
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+              <button onClick={saveKitchenTimes} disabled={savingTimes} className="btn-primary py-2.5">
+                {savingTimes ? "Сохранение..." : "Сохранить время готовки"}
+              </button>
+              <button onClick={loadHistoryByDays} disabled={historyLoading} className="btn-secondary py-2.5">
+                {historyLoading ? "Загрузка..." : "История заказов по дням"}
+              </button>
+              <button onClick={toggleDay} className={session?.kitchen_is_open ? "btn-secondary py-2.5" : "btn-primary py-2.5"}>
                 {session?.kitchen_is_open ? "Закрыть смену" : "Открыть смену"}
               </button>
-            </>
-          )}
-        </div>
-      </div>
+              {!session?.kitchen_is_open && (
+                <button onClick={loadShiftStats} disabled={statsLoading} className="btn-secondary py-2.5">
+                  {statsLoading ? "Загрузка..." : "Статистика смены"}
+                </button>
+              )}
+            </div>
 
-      {/* ── Cook time bar ── */}
-      {!loadingSession && (
-        <div className="flex items-center gap-3 px-4 py-2 border-b border-white/5 bg-brand-gray-dark/40 text-xs shrink-0">
-          <span className="text-brand-text-muted">По умолч.:</span>
-          {editingCookTime ? (
-            <>
-              <input
-                type="number"
-                value={cookMinutes}
-                onChange={(e) => setCookMinutes(e.target.value)}
-                className="input w-16 py-1 text-sm text-center"
-                min={1}
-                max={240}
-              />
-              <span className="text-brand-text-muted">мин</span>
-              <button onClick={saveCookTime} className="btn-primary text-xs py-1 px-3">
-                Сохранить
-              </button>
-              <button
-                onClick={() => {
-                  setEditingCookTime(false);
-                  setCookMinutes(String(session?.kitchen_default_prep_minutes ?? 20));
-                }}
-                className="btn-secondary text-xs py-1 px-2"
-              >
-                Отмена
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="text-white font-bold">
-                {session?.kitchen_default_prep_minutes ?? 20} мин
-              </span>
-              <button
-                onClick={() => setEditingCookTime(true)}
-                className="btn-secondary text-xs py-1 px-2"
-              >
-                Изменить
-              </button>
-            </>
-          )}
-          {lastRefreshed && (
-            <span className="ml-auto text-brand-text-muted">
-              Обновлено{" "}
-              {lastRefreshed.toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-            </span>
-          )}
+            {shiftStats && (
+              <div className="card p-3 mb-3">
+                <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">Статистика смены</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-brand-text-muted text-xs">Заказы</p>
+                    <p className="text-white font-black text-xl">{shiftStats.orders_count}</p>
+                  </div>
+                  <div>
+                    <p className="text-brand-text-muted text-xs">Роллы, шт</p>
+                    <p className="text-white font-black text-xl">{shiftStats.rolls_count}</p>
+                  </div>
+                  <div>
+                    <p className="text-brand-text-muted text-xs">Тотал чек</p>
+                    <p className="text-brand-red font-black text-xl">{Number(shiftStats.total_revenue).toFixed(2)} €</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {historyByDay.length > 0 && (
+              <div className="card p-3 max-h-64 overflow-y-auto">
+                <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">История по дням</p>
+                <div className="space-y-2">
+                  {historyByDay.map((row) => (
+                    <div key={row.dayKey} className="flex items-center justify-between text-sm">
+                      <span className="text-white">{row.dayLabel}</span>
+                      <span className="text-brand-text-muted">{row.orders} заказов</span>
+                      <span className="text-brand-text-muted">{row.rolls} шт</span>
+                      <span className="text-brand-red font-semibold">{row.total.toFixed(2)} €</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* ── Master / Detail or Closed Splash ── */}
-      {!loadingSession && session && !session.kitchen_is_open ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-sm px-6">
-            <div className="text-6xl mb-6">🌙</div>
-            <p className="text-white font-black text-3xl mb-2">
-              Смена закрыта
-            </p>
-            <p className="text-brand-text-muted text-sm mb-1 capitalize">
-              {clock.toLocaleDateString("ru-RU", {
-                timeZone: "Europe/Tallinn",
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-            <p className="text-white font-mono text-4xl font-bold mb-8">
-              {clock.toLocaleTimeString("ru-RU", {
-                timeZone: "Europe/Tallinn",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-            </p>
-            <button onClick={toggleDay} className="btn-primary text-base py-3 px-8">
-              Начать смену
-            </button>
-          </div>
-        </div>
-      ) : (
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex h-full overflow-hidden md:flex-row flex-col pt-2">
         {/* LEFT — detail panel */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {activeCount === 0 && allOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-5xl mb-4">✅</div>
@@ -287,10 +337,11 @@ export default function KitchenPage() {
         </div>
 
         {/* RIGHT — order list */}
-        <div className="w-72 shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col">
+        <div className="w-full md:w-80 shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col">
           <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
-            <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
+            <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest flex items-center gap-2">
               Заказы
+              <span className={`w-2 h-2 rounded-full ${session?.kitchen_is_open ? "bg-green-400" : "bg-gray-500"}`} />
             </span>
             <div className="flex items-center gap-1.5">
               {activeCount > 0 && (
@@ -301,6 +352,11 @@ export default function KitchenPage() {
               <span className="text-xs text-brand-text-muted bg-white/10 px-2 py-0.5 rounded-full">
                 {allOrders.length}
               </span>
+              {lastRefreshed && (
+                <span className="text-[10px] text-brand-text-muted">
+                  {lastRefreshed.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -371,7 +427,6 @@ export default function KitchenPage() {
           )}
         </div>
       </div>
-      )} {/* end shift-open master-detail */}
     </div>
   );
 }

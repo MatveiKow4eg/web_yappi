@@ -4,7 +4,8 @@ import { prisma } from "../../lib/prisma";
 import { err, getAdminSession, ok, requireAdminSession, requireRoles } from "../../lib/session";
 
 const KitchenSettingsSchema = z.object({
-  kitchen_default_prep_minutes: z.number().int().min(1).max(240),
+  kitchen_default_prep_minutes: z.number().int().min(1).max(240).optional(),
+  kitchen_delivery_prep_minutes: z.number().int().min(1).max(240).optional(),
 });
 
 async function ensureSettings() {
@@ -31,6 +32,7 @@ function kitchenPayload(s: {
     kitchen_day_started_at: s.kitchen_day_started_at,
     kitchen_day_ended_at: s.kitchen_day_ended_at,
     kitchen_default_prep_minutes: s.kitchen_default_prep_minutes,
+    kitchen_delivery_prep_minutes: s.min_delivery_time_minutes,
     min_delivery_time_minutes: s.min_delivery_time_minutes,
     max_delivery_time_minutes: s.max_delivery_time_minutes,
     server_time: new Date().toISOString(),
@@ -114,10 +116,20 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
     if (!parsed.success) return err(reply, parsed.error.message);
 
     const settings = await ensureSettings();
+    const deliveryMinutes = parsed.data.kitchen_delivery_prep_minutes;
+
     const updated = await prisma.restaurantSettings.update({
       where: { id: settings.id },
       data: {
-        kitchen_default_prep_minutes: parsed.data.kitchen_default_prep_minutes,
+        ...(parsed.data.kitchen_default_prep_minutes
+          ? { kitchen_default_prep_minutes: parsed.data.kitchen_default_prep_minutes }
+          : {}),
+        ...(deliveryMinutes
+          ? {
+              min_delivery_time_minutes: deliveryMinutes,
+              max_delivery_time_minutes: deliveryMinutes,
+            }
+          : {}),
       },
     });
 
@@ -132,5 +144,61 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
     });
 
     return ok(reply, kitchenPayload(updated));
+  });
+
+  app.get("/kitchen/shift-stats", async (req, reply) => {
+    const session = await getAdminSession(req);
+    if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
+
+    const settings = await ensureSettings();
+    if (!settings.kitchen_day_started_at) {
+      return ok(reply, {
+        has_shift: false,
+        shift_started_at: null,
+        shift_ended_at: null,
+        orders_count: 0,
+        rolls_count: 0,
+        total_revenue: 0,
+      });
+    }
+
+    const from = settings.kitchen_day_started_at;
+    const to = settings.kitchen_day_ended_at ?? new Date();
+    const activeStatuses = ["new", "confirmed_preparing", "ready", "sent", "completed"] as const;
+
+    const [ordersCount, sumRevenue, sumRolls] = await Promise.all([
+      prisma.order.count({
+        where: {
+          created_at: { gte: from, lte: to },
+          status: { in: [...activeStatuses] },
+        },
+      }),
+      prisma.order.aggregate({
+        where: {
+          created_at: { gte: from, lte: to },
+          status: { in: [...activeStatuses] },
+        },
+        _sum: { total_amount: true },
+      }),
+      prisma.orderItem.aggregate({
+        where: {
+          order: {
+            created_at: { gte: from, lte: to },
+            status: { in: [...activeStatuses] },
+          },
+        },
+        _sum: { quantity: true },
+      }),
+    ]);
+
+    return ok(reply, {
+      has_shift: true,
+      shift_started_at: from,
+      shift_ended_at: settings.kitchen_day_ended_at,
+      orders_count: ordersCount,
+      rolls_count: sumRolls._sum.quantity ?? 0,
+      total_revenue: Number(sumRevenue._sum.total_amount ?? 0),
+    });
   });
 }

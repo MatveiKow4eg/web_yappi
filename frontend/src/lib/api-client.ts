@@ -111,9 +111,19 @@ export interface KitchenState {
   kitchen_day_started_at?: string | null;
   kitchen_day_ended_at?: string | null;
   kitchen_default_prep_minutes: number;
+  kitchen_delivery_prep_minutes?: number;
   min_delivery_time_minutes: number;
   max_delivery_time_minutes: number;
   server_time: string;
+}
+
+export interface KitchenShiftStats {
+  has_shift: boolean;
+  shift_started_at: string | null;
+  shift_ended_at: string | null;
+  orders_count: number;
+  rolls_count: number;
+  total_revenue: number;
 }
 
 export interface AdminLoginRequest {
@@ -215,11 +225,12 @@ export const AppApi = {
       get: () => fetchApi<KitchenState>("/api/admin/kitchen"),
       startDay: () => fetchApi<KitchenState>("/api/admin/kitchen/start-day", { method: "POST" }),
       endDay: () => fetchApi<KitchenState>("/api/admin/kitchen/end-day", { method: "POST" }),
-      updateSettings: (payload: { kitchen_default_prep_minutes: number }) =>
+      updateSettings: (payload: { kitchen_default_prep_minutes?: number; kitchen_delivery_prep_minutes?: number }) =>
         fetchApi<KitchenState>("/api/admin/kitchen/settings", {
           method: "PATCH",
           body: JSON.stringify(payload),
         }),
+      shiftStats: () => fetchApi<KitchenShiftStats>("/api/admin/kitchen/shift-stats"),
     },
     promoCodes: {
       list: () => fetchApi<any[]>("/api/admin/promo-codes"),

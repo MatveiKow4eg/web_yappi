@@ -41,7 +41,7 @@ async function adminOrdersRoutes(app) {
             return;
         if (!(0, session_1.requireRoles)(session, reply, ["admin", "kitchen"]))
             return;
-        const { status, statuses, page = "1", limit = "20" } = req.query;
+        const { status, statuses, page = "1", limit = "20", created_after } = req.query;
         const parsedPage = Number.parseInt(page, 10);
         const parsedLimit = Number.parseInt(limit, 10);
         const skip = (parsedPage - 1) * parsedLimit;
@@ -62,6 +62,12 @@ async function adminOrdersRoutes(app) {
             }
             else {
                 statusFilter = { status: { in: kitchenVisibleStatuses } };
+            }
+            if (created_after) {
+                const since = new Date(created_after);
+                if (!isNaN(since.getTime())) {
+                    statusFilter = { ...statusFilter, created_at: { gte: since } };
+                }
             }
         }
         const [orders, total] = await Promise.all([
