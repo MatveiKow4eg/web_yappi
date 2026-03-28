@@ -18,6 +18,25 @@ async function ensureSettings() {
   return settings;
 }
 
+function kitchenPayload(s: {
+  kitchen_is_open: boolean;
+  kitchen_day_started_at: Date | null;
+  kitchen_day_ended_at: Date | null;
+  kitchen_default_prep_minutes: number;
+  min_delivery_time_minutes: number;
+  max_delivery_time_minutes: number;
+}) {
+  return {
+    kitchen_is_open: s.kitchen_is_open,
+    kitchen_day_started_at: s.kitchen_day_started_at,
+    kitchen_day_ended_at: s.kitchen_day_ended_at,
+    kitchen_default_prep_minutes: s.kitchen_default_prep_minutes,
+    min_delivery_time_minutes: s.min_delivery_time_minutes,
+    max_delivery_time_minutes: s.max_delivery_time_minutes,
+    server_time: new Date().toISOString(),
+  };
+}
+
 export default async function adminKitchenRoutes(app: FastifyInstance) {
   app.get("/kitchen", async (req, reply) => {
     const session = await getAdminSession(req);
@@ -25,15 +44,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
     if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const settings = await ensureSettings();
-
-    return ok(reply, {
-      kitchen_is_open: settings.kitchen_is_open,
-      kitchen_day_started_at: settings.kitchen_day_started_at,
-      kitchen_day_ended_at: settings.kitchen_day_ended_at,
-      kitchen_default_prep_minutes: settings.kitchen_default_prep_minutes,
-      min_delivery_time_minutes: settings.min_delivery_time_minutes,
-      max_delivery_time_minutes: settings.max_delivery_time_minutes,
-    });
+    return ok(reply, kitchenPayload(settings));
   });
 
   app.post("/kitchen/start-day", async (req, reply) => {
@@ -47,7 +58,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
       where: { id: settings.id },
       data: {
         kitchen_is_open: true,
-        kitchen_day_started_at: settings.kitchen_day_started_at ?? now,
+        kitchen_day_started_at: now,
         kitchen_day_ended_at: null,
       },
     });
@@ -61,14 +72,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
       },
     });
 
-    return ok(reply, {
-      kitchen_is_open: updated.kitchen_is_open,
-      kitchen_day_started_at: updated.kitchen_day_started_at,
-      kitchen_day_ended_at: updated.kitchen_day_ended_at,
-      kitchen_default_prep_minutes: updated.kitchen_default_prep_minutes,
-      min_delivery_time_minutes: updated.min_delivery_time_minutes,
-      max_delivery_time_minutes: updated.max_delivery_time_minutes,
-    });
+    return ok(reply, kitchenPayload(updated));
   });
 
   app.post("/kitchen/end-day", async (req, reply) => {
@@ -98,14 +102,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
       },
     });
 
-    return ok(reply, {
-      kitchen_is_open: updated.kitchen_is_open,
-      kitchen_day_started_at: updated.kitchen_day_started_at,
-      kitchen_day_ended_at: updated.kitchen_day_ended_at,
-      kitchen_default_prep_minutes: updated.kitchen_default_prep_minutes,
-      min_delivery_time_minutes: updated.min_delivery_time_minutes,
-      max_delivery_time_minutes: updated.max_delivery_time_minutes,
-    });
+    return ok(reply, kitchenPayload(updated));
   });
 
   app.patch("/kitchen/settings", async (req, reply) => {
@@ -134,13 +131,6 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
       },
     });
 
-    return ok(reply, {
-      kitchen_is_open: updated.kitchen_is_open,
-      kitchen_day_started_at: updated.kitchen_day_started_at,
-      kitchen_day_ended_at: updated.kitchen_day_ended_at,
-      kitchen_default_prep_minutes: updated.kitchen_default_prep_minutes,
-      min_delivery_time_minutes: updated.min_delivery_time_minutes,
-      max_delivery_time_minutes: updated.max_delivery_time_minutes,
-    });
+    return ok(reply, kitchenPayload(updated));
   });
 }

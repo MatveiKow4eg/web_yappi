@@ -113,6 +113,7 @@ export interface KitchenState {
   kitchen_default_prep_minutes: number;
   min_delivery_time_minutes: number;
   max_delivery_time_minutes: number;
+  server_time: string;
 }
 
 export interface AdminLoginRequest {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { AppApi, type Order, type KitchenState } from "@/lib/api-client";
 import KitchenOrderActions from "./KitchenOrderActions";
 
@@ -50,18 +50,30 @@ const PAYMENT_LABELS: Record<string, string> = {
 export default function KitchenPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [session, setSession] = useState<KitchenState | null>(null);
+  const sessionRef = useRef<KitchenState | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [cookMinutes, setCookMinutes] = useState("");
   const [editingCookTime, setEditingCookTime] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [clock, setClock] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await AppApi.admin.orders.list({
+      const currentSession = sessionRef.current;
+      const params: Record<string, string | number> = {
         statuses: "new,confirmed_preparing,ready,sent,completed,cancelled",
         limit: 0,
-      });
+      };
+      if (currentSession?.kitchen_day_started_at) {
+        params.created_after = currentSession.kitchen_day_started_at;
+      }
+      const res = await AppApi.admin.orders.list(params);
       const sorted = [...res.orders].sort((a: Order, b: Order) => {
         const kDiff = orderSortKey(a) - orderSortKey(b);
         if (kDiff !== 0) return kDiff;
@@ -86,6 +98,7 @@ export default function KitchenPage() {
     try {
       const s = await AppApi.admin.kitchen.get();
       setSession(s);
+      sessionRef.current = s;
       setCookMinutes(String(s.kitchen_default_prep_minutes));
     } catch {
     } finally {
@@ -107,6 +120,8 @@ export default function KitchenPage() {
         ? await AppApi.admin.kitchen.endDay()
         : await AppApi.admin.kitchen.startDay();
       setSession(updated);
+      sessionRef.current = updated;
+      fetchOrders();
     } catch {}
   }
 
@@ -222,7 +237,37 @@ export default function KitchenPage() {
         </div>
       )}
 
-      {/* ── Master / Detail ── */}
+      {/* ── Master / Detail or Closed Splash ── */}
+      {!loadingSession && session && !session.kitchen_is_open ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-sm px-6">
+            <div className="text-6xl mb-6">🌙</div>
+            <p className="text-white font-black text-3xl mb-2">
+              Смена закрыта
+            </p>
+            <p className="text-brand-text-muted text-sm mb-1 capitalize">
+              {clock.toLocaleDateString("ru-RU", {
+                timeZone: "Europe/Tallinn",
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+            <p className="text-white font-mono text-4xl font-bold mb-8">
+              {clock.toLocaleTimeString("ru-RU", {
+                timeZone: "Europe/Tallinn",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </p>
+            <button onClick={toggleDay} className="btn-primary text-base py-3 px-8">
+              Начать смену
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT — detail panel */}
         <div className="flex-1 overflow-y-auto p-6">
@@ -326,6 +371,7 @@ export default function KitchenPage() {
           )}
         </div>
       </div>
+      )} {/* end shift-open master-detail */}
     </div>
   );
 }

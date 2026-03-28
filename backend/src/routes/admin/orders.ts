@@ -38,14 +38,14 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
   });
 
   // GET /api/admin/orders
-  app.get<{ Querystring: { status?: string; statuses?: string; page?: string; limit?: string } }>(
+  app.get<{ Querystring: { status?: string; statuses?: string; page?: string; limit?: string; created_after?: string } }>(
     "/orders",
     async (req, reply) => {
       const session = await getAdminSession(req);
       if (!requireAdminSession(session, reply)) return;
       if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
-      const { status, statuses, page = "1", limit = "20" } = req.query;
+      const { status, statuses, page = "1", limit = "20", created_after } = req.query;
       const parsedPage = Number.parseInt(page, 10);
       const parsedLimit = Number.parseInt(limit, 10);
       const skip = (parsedPage - 1) * parsedLimit;
@@ -64,6 +64,13 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
             : { status: { in: [] } };
         } else {
           statusFilter = { status: { in: kitchenVisibleStatuses } };
+        }
+
+        if (created_after) {
+          const since = new Date(created_after);
+          if (!isNaN(since.getTime())) {
+            statusFilter = { ...statusFilter, created_at: { gte: since } };
+          }
         }
       }
 
