@@ -40,6 +40,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1"));
   const limit = 25;
 
+  const statsFallback = { totalOrders: 0, todayOrders: 0, pendingOrders: 0 };
+  const stats = await AppApi.admin.stats().catch(() => statsFallback);
+  const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
+
   const res = await AppApi.admin.orders
     .list({ status, page, limit })
     .catch(() => ({ orders: [], total: 0, page: 1, limit }));
@@ -64,6 +68,23 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-black text-white">Заказы</h1>
           <span className="text-brand-text-muted text-sm">{total} заказов</span>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {[
+            { label: "Всего заказов", value: totalOrders, icon: "📦" },
+            { label: "Заказов сегодня", value: todayOrders, icon: "📅" },
+            { label: "В обработке", value: pendingOrders, icon: "⏳" },
+          ].map((s) => (
+            <div key={s.label} className="card p-5 flex items-center gap-4">
+              <span className="text-3xl">{s.icon}</span>
+              <div>
+                <p className="text-brand-text-muted text-xs mb-0.5">{s.label}</p>
+                <p className="text-3xl font-black text-white">{s.value}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Status filter tabs */}
