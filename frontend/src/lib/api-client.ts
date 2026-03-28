@@ -178,7 +178,7 @@ export const AppApi = {
   },
   orders: {
     track: (token: string) => fetchApi<Order>(`/api/orders/track/${token}`),
-    confirmReceived: (token: string) => fetchApi<Order>(`/api/orders/track/${token}/confirm-received`, { method: "POST" }),
+    confirmReceived: (token: string) => fetchApi<Order>(`/api/orders/track/${token}/confirm-received`, { method: "POST", body: JSON.stringify({}) }),
   },
   admin: {
     auth: {

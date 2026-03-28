@@ -18,6 +18,8 @@ const STATUS_DOT: Record<string, string> = {
   confirmed_preparing: "bg-brand-red",
   ready: "bg-green-400",
   sent: "bg-blue-400",
+  completed: "bg-gray-500",
+  cancelled: "bg-gray-500",
 };
 
 const STATUS_LEFT_BORDER: Record<string, string> = {
@@ -25,7 +27,17 @@ const STATUS_LEFT_BORDER: Record<string, string> = {
   confirmed_preparing: "border-l-brand-red",
   ready: "border-l-green-400",
   sent: "border-l-blue-400",
+  completed: "border-l-gray-600",
+  cancelled: "border-l-gray-600",
 };
+
+const CLOSED_STATUSES = new Set(["completed", "cancelled", "payment_failed", "expired"]);
+
+function orderSortKey(o: Order): number {
+  if (o.status === "new") return 0;
+  if (["confirmed_preparing", "ready", "sent"].includes(o.status)) return 1;
+  return 2;
+}
 
 const PAYMENT_LABELS: Record<string, string> = {
   stripe: "Интернет-платеж",
@@ -47,17 +59,25 @@ export default function KitchenPage() {
   const fetchOrders = useCallback(async () => {
     try {
       const res = await AppApi.admin.orders.list({
-        statuses: "new,confirmed_preparing,ready,sent",
+        statuses: "new,confirmed_preparing,ready,sent,completed,cancelled",
         limit: 0,
       });
-      setOrders(res.orders);
+      const sorted = [...res.orders].sort((a: Order, b: Order) => {
+        const kDiff = orderSortKey(a) - orderSortKey(b);
+        if (kDiff !== 0) return kDiff;
+        // Within same group: active = oldest first (needs attention), closed = newest first
+        const aTime = new Date(a.created_at).getTime();
+        const bTime = new Date(b.created_at).getTime();
+        return orderSortKey(a) === 2 ? bTime - aTime : aTime - bTime;
+      });
+      setOrders(sorted);
       setLastRefreshed(new Date());
       setSelectedId((prev) => {
         if (prev) {
-          const still = res.orders.find((o: Order) => o.id === prev);
-          return still ? prev : (res.orders[0]?.id ?? null);
+          const still = sorted.find((o: Order) => o.id === prev);
+          return still ? prev : (sorted[0]?.id ?? null);
         }
-        return res.orders[0]?.id ?? null;
+        return sorted[0]?.id ?? null;
       });
     } catch {}
   }, []);
@@ -102,10 +122,8 @@ export default function KitchenPage() {
     } catch {}
   }
 
-  const allOrders = [
-    ...orders.filter((o) => ["new", "confirmed_preparing", "ready"].includes(o.status)),
-    ...orders.filter((o) => o.status === "sent"),
-  ];
+  const allOrders = orders;
+  const activeCount = orders.filter((o) => !CLOSED_STATUSES.has(o.status)).length;
 
   const selectedOrder = allOrders.find((o) => o.id === selectedId) ?? null;
 
@@ -208,7 +226,7 @@ export default function KitchenPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT — detail panel */}
         <div className="flex-1 overflow-y-auto p-6">
-          {allOrders.length === 0 ? (
+          {activeCount === 0 && allOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-5xl mb-4">✅</div>
               <p className="text-white font-bold text-xl mb-1">Всё готово</p>
@@ -229,64 +247,81 @@ export default function KitchenPage() {
             <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
               Заказы
             </span>
-            <span className="text-xs text-brand-text-muted bg-white/10 px-2 py-0.5 rounded-full">
-              {allOrders.length}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {activeCount > 0 && (
+                <span className="text-xs text-yellow-400 font-bold bg-yellow-400/10 px-2 py-0.5 rounded-full">
+                  {activeCount} акт.
+                </span>
+              )}
+              <span className="text-xs text-brand-text-muted bg-white/10 px-2 py-0.5 rounded-full">
+                {allOrders.length}
+              </span>
+            </div>
           </div>
 
           {allOrders.length === 0 ? (
             <p className="text-brand-text-muted text-xs text-center py-8">Нет заказов</p>
           ) : (
             <div className="flex flex-col flex-1">
-              {allOrders.map((order) => (
-                <button
-                  key={order.id}
-                  onClick={() => setSelectedId(order.id)}
-                  className={`w-full text-left px-4 py-3.5 border-b border-white/5 transition-colors hover:bg-white/5 border-l-2 ${
-                    selectedId === order.id
-                      ? `bg-white/8 ${STATUS_LEFT_BORDER[order.status] ?? "border-l-white/20"}`
-                      : "border-l-transparent"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[order.status] ?? "bg-gray-400"} ${order.status === "new" ? "animate-pulse" : ""}`}
-                    />
-                    <span className="text-white font-mono font-bold text-sm">
-                      #{order.order_number}
-                    </span>
-                    <span className="ml-auto text-xs text-brand-text-muted">
-                      {new Date(order.created_at).toLocaleTimeString("ru-RU", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <span className="text-brand-text-muted text-xs truncate">
-                      {order.type === "delivery" ? "🚚" : "🏪"} {order.customer_name}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-brand-text-muted text-xs">
-                      {order.items.length} поз. · {Number(order.total_amount).toFixed(2)} €
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        order.status === "new"
-                          ? "text-yellow-400"
-                          : order.status === "confirmed_preparing"
-                            ? "text-brand-red"
-                            : order.status === "sent"
-                              ? "text-blue-400"
-                              : "text-green-400"
-                      }`}
-                    >
-                      {STATUS_LABELS[order.status]}
-                    </span>
-                  </div>
-                </button>
-              ))}
+              {allOrders.map((order) => {
+                const isClosed = CLOSED_STATUSES.has(order.status);
+                const isNew = order.status === "new";
+                return (
+                  <button
+                    key={order.id}
+                    onClick={() => setSelectedId(order.id)}
+                    className={`w-full text-left px-4 py-3.5 border-b border-white/5 transition-colors border-l-2 ${
+                      isClosed ? "opacity-45 hover:opacity-70" : "hover:bg-white/5"
+                    } ${
+                      isNew ? "bg-yellow-500/8" : ""
+                    } ${
+                      selectedId === order.id
+                        ? `bg-white/8 ${STATUS_LEFT_BORDER[order.status] ?? "border-l-white/20"}`
+                        : "border-l-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[order.status] ?? "bg-gray-400"} ${isNew ? "animate-pulse" : ""}`}
+                      />
+                      <span className={`font-mono font-bold text-sm ${isClosed ? "text-brand-text-muted" : "text-white"}`}>
+                        #{order.order_number}
+                      </span>
+                      <span className="ml-auto text-xs text-brand-text-muted">
+                        {new Date(order.created_at).toLocaleTimeString("ru-RU", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-brand-text-muted text-xs truncate">
+                        {order.type === "delivery" ? "🚚" : "🏪"} {order.customer_name}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-brand-text-muted text-xs">
+                        {order.items.length} поз. · {Number(order.total_amount).toFixed(2)} €
+                      </span>
+                      <span
+                        className={`text-xs font-semibold ${
+                          isClosed
+                            ? "text-gray-500"
+                            : order.status === "new"
+                              ? "text-yellow-400"
+                              : order.status === "confirmed_preparing"
+                                ? "text-brand-red"
+                                : order.status === "sent"
+                                  ? "text-blue-400"
+                                  : "text-green-400"
+                        }`}
+                      >
+                        {STATUS_LABELS[order.status]}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
