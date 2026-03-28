@@ -19,13 +19,15 @@ export default function KitchenLoginPage() {
 
       if (data.role !== "admin" && data.role !== "kitchen") {
         setError("У этой учётной записи нет доступа к кухне.");
+        setLoading(false);
         return;
       }
 
+      // Give the browser a moment to process the Set-Cookie header
+      await new Promise(resolve => setTimeout(resolve, 100));
       window.location.assign("/kitchen");
     } catch (err: any) {
       setError(err.message || "Ошибка соединения. Попробуйте снова.");
-    } finally {
       setLoading(false);
     }
   }

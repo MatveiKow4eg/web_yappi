@@ -17,10 +17,11 @@ export default function AdminLoginPage() {
     try {
       await AppApi.admin.auth.login({ email, password });
       // Use full navigation so middleware gets the latest cookie immediately.
+      // Add small delay to ensure Set-Cookie is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
       window.location.assign("/admin");
     } catch (err: any) {
       setError(err.message || "Ошибка соединения. Попробуйте снова.");
-    } finally {
       setLoading(false);
     }
   }
