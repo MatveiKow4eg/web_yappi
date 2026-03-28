@@ -1,4 +1,4 @@
-import { AppApi } from "@/lib/api-client";
+import { AdminApi } from "@/lib/api-server";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 
@@ -41,10 +41,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const limit = 25;
 
   const statsFallback = { totalOrders: 0, todayOrders: 0, pendingOrders: 0 };
-  const stats = await AppApi.admin.stats().catch(() => statsFallback);
+  const stats = await AdminApi.stats().catch(() => statsFallback);
   const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
 
-  const res = await AppApi.admin.orders
+  const res = await AdminApi.orders
     .list({ status, page, limit })
     .catch(() => ({ orders: [], total: 0, page: 1, limit }));
   const { orders = [], total = 0 } = res as any;

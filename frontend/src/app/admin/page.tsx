@@ -1,13 +1,13 @@
-import { AppApi } from "@/lib/api-client";
+import { AdminApi } from "@/lib/api-server";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
   const statsFallback = { totalOrders: 0, todayOrders: 0, pendingOrders: 0 };
-  const stats = await AppApi.admin.stats().catch(() => statsFallback);
+  const stats = await AdminApi.stats().catch(() => statsFallback);
   const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
 
-  const recentOrders = await AppApi.admin.orders
+  const recentOrders = await AdminApi.orders
     .list({ limit: 10 })
     .then((res) => res.orders)
     .catch(() => []);

@@ -1,11 +1,11 @@
-import { AppApi } from "@/lib/api-client";
+import { AdminApi } from "@/lib/api-server";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Зоны доставки — Админка" };
 
 export default async function AdminDeliveryZonesPage() {
-  const zones = await AppApi.admin.deliveryZones.list().catch(() => []);
+  const zones = await AdminApi.deliveryZones.list().catch(() => []);
 
   return (
     <div className="flex min-h-screen">

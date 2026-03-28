@@ -1,4 +1,4 @@
-import { AppApi } from "@/lib/api-client";
+import { AdminApi } from "@/lib/api-server";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Баннеры — Админка" };
 
 export default async function AdminBannersPage() {
-  const banners = await AppApi.admin.banners.list().catch(() => []);
+  const banners = await AdminApi.banners.list().catch(() => []);
 
   return (
     <div className="flex min-h-screen">
