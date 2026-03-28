@@ -22,7 +22,6 @@ const ProductSchema = zod_1.z.object({
     description_en: zod_1.z.string().optional(),
     description_et: zod_1.z.string().optional(),
     base_price: zod_1.z.number().positive(),
-    old_price: zod_1.z.number().positive().optional(),
     image_url: ImageRefSchema.optional().or(zod_1.z.literal("")),
     is_active: zod_1.z.boolean().optional().default(true),
     is_hidden: zod_1.z.boolean().optional().default(false),
@@ -30,9 +29,10 @@ const ProductSchema = zod_1.z.object({
     sort_order: zod_1.z.number().int().optional().default(0),
     sku: zod_1.z.string().optional(),
     pieces_total: zod_1.z.number().int().positive().optional(),
-    allow_half_half: zod_1.z.boolean().optional(),
-    half_half_price: zod_1.z.number().positive().optional(),
-    half_half_old_price: zod_1.z.number().positive().optional(),
+    variant1_pieces: zod_1.z.number().int().positive().optional(),
+    variant1_price: zod_1.z.number().positive().optional(),
+    variant2_pieces: zod_1.z.number().int().positive().optional(),
+    variant2_price: zod_1.z.number().positive().optional(),
 });
 const UpdateSchema = ProductSchema.partial();
 async function adminProductsRoutes(app) {
@@ -40,6 +40,8 @@ async function adminProductsRoutes(app) {
     app.get("/products", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const { category, page = "1", limit = "50" } = req.query;
         const [products, total] = await Promise.all([
@@ -60,7 +62,6 @@ async function adminProductsRoutes(app) {
                     description_et: true,
                     image_url: true,
                     base_price: true,
-                    old_price: true,
                     is_active: true,
                     is_hidden: true,
                     is_available: true,
@@ -68,9 +69,10 @@ async function adminProductsRoutes(app) {
                     sku: true,
                     sort_order: true,
                     pieces_total: true,
-                    allow_half_half: true,
-                    half_half_price: true,
-                    half_half_old_price: true,
+                    variant1_pieces: true,
+                    variant1_price: true,
+                    variant2_pieces: true,
+                    variant2_price: true,
                     created_at: true,
                     updated_at: true,
                     category: { select: { name_ru: true, slug: true } },
@@ -84,6 +86,8 @@ async function adminProductsRoutes(app) {
     app.get("/products/:id", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const product = await prisma_1.prisma.product.findUnique({
             where: { id: req.params.id },
@@ -99,7 +103,6 @@ async function adminProductsRoutes(app) {
                 description_et: true,
                 image_url: true,
                 base_price: true,
-                old_price: true,
                 is_active: true,
                 is_hidden: true,
                 is_available: true,
@@ -107,9 +110,10 @@ async function adminProductsRoutes(app) {
                 sku: true,
                 sort_order: true,
                 pieces_total: true,
-                allow_half_half: true,
-                half_half_price: true,
-                half_half_old_price: true,
+                variant1_pieces: true,
+                variant1_price: true,
+                variant2_pieces: true,
+                variant2_price: true,
                 created_at: true,
                 updated_at: true,
                 category: { select: { id: true, name_ru: true, slug: true } },
@@ -123,6 +127,8 @@ async function adminProductsRoutes(app) {
     app.post("/products", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const parsed = ProductSchema.safeParse(req.body);
         if (!parsed.success)
@@ -141,6 +147,8 @@ async function adminProductsRoutes(app) {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
             return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
+            return;
         const parsed = UpdateSchema.safeParse(req.body);
         if (!parsed.success)
             return (0, session_1.err)(reply, parsed.error.message);
@@ -154,6 +162,8 @@ async function adminProductsRoutes(app) {
     app.delete("/products/:id", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         await prisma_1.prisma.product.update({ where: { id: req.params.id }, data: { is_active: false, is_hidden: true } });
         return (0, session_1.ok)(reply, null);

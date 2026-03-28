@@ -23,6 +23,8 @@ async function adminPromoCodesRoutes(app) {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
             return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
+            return;
         const codes = await prisma_1.prisma.promoCode.findMany({
             orderBy: { created_at: "desc" },
             include: { _count: { select: { usages: true } } },
@@ -33,6 +35,8 @@ async function adminPromoCodesRoutes(app) {
     app.post("/promo-codes", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const parsed = PromoCodeSchema.safeParse(req.body);
         if (!parsed.success)
@@ -66,6 +70,8 @@ async function adminPromoCodesRoutes(app) {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
             return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
+            return;
         const { id } = req.params;
         const parsed = PromoCodeSchema.partial().safeParse(req.body);
         if (!parsed.success)
@@ -92,6 +98,8 @@ async function adminPromoCodesRoutes(app) {
     app.delete("/promo-codes/:id", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const { id } = req.params;
         await prisma_1.prisma.promoCode.delete({

@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
+import { getAdminSession, requireAdminSession, requireRoles, ok, err } from "../../lib/session";
 import { z } from "zod";
 
 const PromoCodeSchema = z.object({
@@ -22,6 +22,7 @@ export default async function adminPromoCodesRoutes(app: FastifyInstance) {
   app.get("/promo-codes", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const codes = await prisma.promoCode.findMany({
       orderBy: { created_at: "desc" },
@@ -34,6 +35,7 @@ export default async function adminPromoCodesRoutes(app: FastifyInstance) {
   app.post("/promo-codes", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = PromoCodeSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -69,6 +71,7 @@ export default async function adminPromoCodesRoutes(app: FastifyInstance) {
   app.patch("/promo-codes/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const { id } = req.params as { id: string };
     const parsed = PromoCodeSchema.partial().safeParse(req.body);
@@ -98,6 +101,7 @@ export default async function adminPromoCodesRoutes(app: FastifyInstance) {
   app.delete("/promo-codes/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const { id } = req.params as { id: string };
 

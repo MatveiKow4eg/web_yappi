@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma";
-import { err, getAdminSession, ok, requireAdminSession } from "../../lib/session";
+import { err, getAdminSession, ok, requireAdminSession, requireRoles } from "../../lib/session";
 
 const StatusSchema = z.object({
   status: z.enum(["new", "confirmed_preparing", "ready", "sent", "completed", "cancelled"]),
@@ -18,10 +18,13 @@ const STATUS_TIMESTAMPS: Record<string, string> = {
 };
 
 export default async function adminOrdersRoutes(app: FastifyInstance) {
+  const kitchenVisibleStatuses = ["new", "confirmed_preparing", "ready", "sent", "completed", "cancelled"];
+
   // GET /api/admin/stats
   app.get("/stats", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const [totalOrders, todayOrders, pendingOrders] = await Promise.all([
       prisma.order.count(),
@@ -40,6 +43,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const session = await getAdminSession(req);
       if (!requireAdminSession(session, reply)) return;
+      if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
       const { status, statuses, page = "1", limit = "20" } = req.query;
       const parsedPage = Number.parseInt(page, 10);
@@ -49,6 +53,19 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
       let statusFilter: Record<string, unknown> = {};
       if (status) statusFilter = { status };
       if (statuses) statusFilter = { status: { in: statuses.split(",") } };
+
+      if (session.role === "kitchen") {
+        if (statuses) {
+          const requested = statuses.split(",").map((s) => s.trim()).filter(Boolean);
+          statusFilter = { status: { in: requested.filter((s) => kitchenVisibleStatuses.includes(s)) } };
+        } else if (status) {
+          statusFilter = kitchenVisibleStatuses.includes(status)
+            ? { status }
+            : { status: { in: [] } };
+        } else {
+          statusFilter = { status: { in: kitchenVisibleStatuses } };
+        }
+      }
 
       const [orders, total] = await Promise.all([
         prisma.order.findMany({
@@ -73,6 +90,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>("/orders/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },
@@ -90,6 +108,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string } }>("/orders/:id/status", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const parsed = StatusSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -161,6 +180,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>("/orders/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAdminSession = getAdminSession;
 exports.requireAdminSession = requireAdminSession;
+exports.requireRoles = requireRoles;
 exports.ok = ok;
 exports.err = err;
 const auth_1 = require("./auth");
@@ -14,6 +15,13 @@ async function getAdminSession(req) {
 function requireAdminSession(session, reply) {
     if (!session) {
         reply.code(401).send({ ok: false, error: "Unauthorized" });
+        return false;
+    }
+    return true;
+}
+function requireRoles(session, reply, allowedRoles) {
+    if (!allowedRoles.includes(session.role)) {
+        reply.code(403).send({ ok: false, error: "Forbidden" });
         return false;
     }
     return true;

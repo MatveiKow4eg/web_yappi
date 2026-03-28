@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
+import { getAdminSession, requireAdminSession, requireRoles, ok, err } from "../../lib/session";
 import { z } from "zod";
 
 const CategorySchema = z.object({
@@ -16,6 +16,7 @@ export default async function adminCategoriesRoutes(app: FastifyInstance) {
   app.get("/categories", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const cats = await prisma.category.findMany({
       orderBy: { sort_order: "asc" },
@@ -27,6 +28,7 @@ export default async function adminCategoriesRoutes(app: FastifyInstance) {
   app.post("/categories", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = CategorySchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -38,6 +40,7 @@ export default async function adminCategoriesRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string } }>("/categories/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = CategorySchema.partial().safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);

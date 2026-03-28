@@ -29,11 +29,14 @@ enum OrderType {
 }
 
 enum OrderStatus {
+  awaiting_payment
   new
   confirmed_preparing
   ready
   sent
   completed
+  payment_failed
+  expired
   cancelled
 }
 
@@ -276,6 +279,7 @@ model Order {
   created_at       DateTime        @default(now())
   updated_at            DateTime        @updatedAt
   stripe_session_id     String?         @unique
+  stripe_payment_intent_id String?      @unique
   checkout_fingerprint  String?
   estimated_prep_minutes Int?
   estimated_ready_at    DateTime?

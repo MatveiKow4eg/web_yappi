@@ -1,10 +1,41 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = publicOrdersRoutes;
 const prisma_1 = require("../../lib/prisma");
 const session_1 = require("../../lib/session");
 const zod_1 = require("zod");
 const uuid_1 = require("uuid");
+const stripe_1 = __importDefault(require("stripe"));
+const crypto_1 = require("crypto");
+const STRIPE_ORDER_REUSE_WINDOW_MS = 30 * 60 * 1000;
+function getStripe() {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key)
+        throw new Error("STRIPE_SECRET_KEY is not set");
+    return new stripe_1.default(key, { apiVersion: "2026-03-25.dahlia" });
+}
+function buildCheckoutFingerprint(input) {
+    const normalized = {
+        ...input,
+        promo_code: input.promo_code?.toUpperCase() ?? null,
+        items: input.items
+            .map((item) => ({
+            ...item,
+            product_variant_id: item.product_variant_id ?? null,
+            selections: item.selections
+                .map((selection) => ({
+                option_item_id: selection.option_item_id,
+                quantity: selection.quantity,
+            }))
+                .sort((a, b) => `${a.option_item_id}:${a.quantity}`.localeCompare(`${b.option_item_id}:${b.quantity}`)),
+        }))
+            .sort((a, b) => `${a.product_id}:${a.product_variant_id ?? ""}`.localeCompare(`${b.product_id}:${b.product_variant_id ?? ""}`)),
+    };
+    return (0, crypto_1.createHash)("sha256").update(JSON.stringify(normalized)).digest("hex");
+}
 const OrderSchema = zod_1.z.object({
     type: zod_1.z.enum(["delivery", "pickup"]),
     payment_method: zod_1.z.enum(["stripe", "cash_on_pickup", "card_on_pickup", "cash_on_delivery", "card_on_delivery"]),
@@ -28,6 +59,9 @@ const OrderSchema = zod_1.z.object({
             quantity: zod_1.z.number().int().positive().default(1),
         })).default([]),
     })).min(1),
+});
+const StripeCancelSchema = zod_1.z.object({
+    tracking_token: zod_1.z.string().min(1),
 });
 async function publicOrdersRoutes(app) {
     // POST /api/orders
@@ -171,6 +205,106 @@ async function publicOrdersRoutes(app) {
             promoCodeId = promo.id;
         }
         const totalAmount = Math.max(0, subtotal + deliveryFee - discountAmount);
+        // Stripe Checkout does not support zero-amount payment sessions.
+        // Force such orders to use a non-Stripe payment method instead of creating a broken flow.
+        if (body.payment_method === "stripe" && totalAmount <= 0) {
+            return (0, session_1.err)(reply, "Онлайн-оплата недоступна для заказа с нулевой суммой", 422);
+        }
+        if (body.payment_method === "stripe") {
+            const settings = await prisma_1.prisma.restaurantSettings.findFirst({
+                select: { stripe_enabled: true },
+            });
+            if (!settings?.stripe_enabled) {
+                req.log.warn("Stripe checkout blocked: stripe_enabled is false");
+                return (0, session_1.err)(reply, "Онлайн-оплата отключена в настройках ресторана", 422);
+            }
+            if (!process.env.STRIPE_SECRET_KEY) {
+                req.log.error("Stripe checkout blocked: STRIPE_SECRET_KEY is missing");
+                return (0, session_1.err)(reply, "Интернет-платеж временно недоступен: платежный сервис не настроен на сервере", 422);
+            }
+        }
+        // ─── Compute checkout fingerprint for ALL payment methods ────────────────
+        // This detects duplicate orders within 30 minutes regardless of payment method.
+        const checkoutFingerprint = buildCheckoutFingerprint({
+            type: body.type,
+            payment_method: body.payment_method,
+            customer_name: body.customer_name,
+            customer_phone: body.customer_phone,
+            address_line: body.address_line,
+            apartment: body.apartment,
+            entrance: body.entrance,
+            floor: body.floor,
+            door_code: body.door_code,
+            comment: body.comment,
+            promo_code: body.promo_code,
+            language_code: body.language_code,
+            delivery_zone_id: body.delivery_zone_id,
+            total_amount: totalAmount,
+            items: body.items,
+        });
+        // ─── Check for duplicate orders (applies to ALL payment methods) ──────────
+        // Prevents accidental duplicate orders from API retries within 30 minutes.
+        const existingOrder = await prisma_1.prisma.order.findFirst({
+            where: {
+                payment_method: body.payment_method,
+                payment_status: "pending",
+                status: { notIn: ["cancelled", "payment_failed", "expired"] },
+                checkout_fingerprint: checkoutFingerprint,
+                created_at: { gte: new Date(Date.now() - STRIPE_ORDER_REUSE_WINDOW_MS) },
+            },
+            orderBy: { created_at: "desc" },
+        });
+        // ─── Stripe-specific session handling ────────────────────────────────────
+        if (body.payment_method === "stripe" && existingOrder?.stripe_session_id) {
+            const stripe = getStripe();
+            const existingSession = await stripe.checkout.sessions.retrieve(existingOrder.stripe_session_id);
+            if (existingSession.status === "open" && existingSession.payment_status === "unpaid" && existingSession.url) {
+                return reply.code(200).send({
+                    ok: true,
+                    data: {
+                        order_number: existingOrder.order_number,
+                        tracking_token: existingOrder.tracking_token,
+                        total_amount: parseFloat(existingOrder.total_amount.toString()),
+                        payment_status: existingOrder.payment_status,
+                        stripe_checkout_url: existingSession.url,
+                    },
+                });
+            }
+            if (existingSession.status === "complete" && existingSession.payment_status === "paid") {
+                return reply.code(200).send({
+                    ok: true,
+                    data: {
+                        order_number: existingOrder.order_number,
+                        tracking_token: existingOrder.tracking_token,
+                        total_amount: parseFloat(existingOrder.total_amount.toString()),
+                        payment_status: existingOrder.payment_status,
+                    },
+                });
+            }
+            if (existingSession.status === "expired") {
+                await prisma_1.prisma.order.update({
+                    where: { id: existingOrder.id },
+                    data: {
+                        status: "expired",
+                        payment_status: "failed",
+                        cancel_reason: "Сессия интернет-платежа истекла",
+                        cancelled_at: new Date(),
+                    },
+                });
+            }
+        }
+        // ─── Non-Stripe duplicate: return existing pending order ──────────────────
+        if (body.payment_method !== "stripe" && existingOrder) {
+            return reply.code(200).send({
+                ok: true,
+                data: {
+                    order_number: existingOrder.order_number,
+                    tracking_token: existingOrder.tracking_token,
+                    total_amount: parseFloat(existingOrder.total_amount.toString()),
+                    payment_status: existingOrder.payment_status,
+                },
+            });
+        }
         const orderNumber = `YS-${Date.now().toString(36).toUpperCase()}`;
         const trackingToken = (0, uuid_1.v4)();
         const order = await prisma_1.prisma.order.create({
@@ -178,7 +312,7 @@ async function publicOrdersRoutes(app) {
                 order_number: orderNumber,
                 tracking_token: trackingToken,
                 type: body.type,
-                status: "new",
+                status: body.payment_method === "stripe" ? "awaiting_payment" : "new",
                 payment_method: body.payment_method,
                 payment_status: "pending",
                 customer_name: body.customer_name,
@@ -197,6 +331,7 @@ async function publicOrdersRoutes(app) {
                 currency: "EUR",
                 promo_code_id: promoCodeId,
                 delivery_zone_id: zoneId,
+                checkout_fingerprint: checkoutFingerprint,
                 items: {
                     create: resolvedItems.map((item) => ({
                         product_id: item.product_id,
@@ -211,7 +346,7 @@ async function publicOrdersRoutes(app) {
                 },
             },
         });
-        if (promoCodeId) {
+        if (promoCodeId && body.payment_method !== "stripe") {
             await prisma_1.prisma.promoCodeUsage.create({
                 data: {
                     promo_code_id: promoCodeId,
@@ -221,25 +356,187 @@ async function publicOrdersRoutes(app) {
                 },
             });
         }
+        // ─── Stripe Checkout ────────────────────────────────────────
+        if (body.payment_method === "stripe") {
+            const configuredBaseUrl = process.env.BASE_URL?.trim();
+            const requestOrigin = typeof req.headers.origin === "string" ? req.headers.origin.trim() : "";
+            const baseUrl = configuredBaseUrl || requestOrigin;
+            if (!baseUrl) {
+                req.log.error("Stripe checkout: BASE_URL is missing and request origin is unavailable");
+                return (0, session_1.err)(reply, "Не настроен публичный URL фронтенда для интернет-платежа", 500);
+            }
+            const stripe = getStripe();
+            // Build line items from already-resolved server-side prices.
+            // unit_price already includes all option/selection deltas — safe to use directly.
+            const stripeLineItems = resolvedItems.map((item) => ({
+                price_data: {
+                    currency: "eur",
+                    unit_amount: Math.round(item.unit_price * 100),
+                    product_data: { name: item.product_name_snapshot },
+                },
+                quantity: item.quantity,
+            }));
+            if (deliveryFee > 0) {
+                stripeLineItems.push({
+                    price_data: {
+                        currency: "eur",
+                        unit_amount: Math.round(deliveryFee * 100),
+                        product_data: { name: "Доставка" },
+                    },
+                    quantity: 1,
+                });
+            }
+            // Discount as a Stripe coupon (negative line items are not supported in Checkout).
+            const sessionParams = {
+                mode: "payment",
+                payment_method_types: ["card"],
+                line_items: stripeLineItems,
+                metadata: { orderId: order.id },
+                payment_intent_data: {
+                    metadata: { orderId: order.id },
+                },
+                // success_url/cancel_url are only UI redirects; payment truth is the webhook.
+                success_url: `${baseUrl}/track/${order.tracking_token}`,
+                cancel_url: `${baseUrl}/checkout?cancelled=1&tracking_token=${order.tracking_token}`,
+            };
+            try {
+                if (discountAmount > 0) {
+                    const coupon = await stripe.coupons.create({
+                        amount_off: Math.round(discountAmount * 100),
+                        currency: "eur",
+                        duration: "once",
+                    });
+                    sessionParams.discounts = [{ coupon: coupon.id }];
+                }
+                const session = await stripe.checkout.sessions.create(sessionParams, {
+                    idempotencyKey: `order_${order.id}`,
+                });
+                // Persist session id so webhook can resolve the order by orderId from metadata.
+                await prisma_1.prisma.order.update({
+                    where: { id: order.id },
+                    data: { stripe_session_id: session.id },
+                });
+                return reply.code(201).send({
+                    ok: true,
+                    data: {
+                        order_number: order.order_number,
+                        tracking_token: order.tracking_token,
+                        total_amount: totalAmount,
+                        payment_status: order.payment_status,
+                        stripe_checkout_url: session.url,
+                    },
+                });
+            }
+            catch (stripeError) {
+                req.log.error({ err: stripeError, orderId: order.id }, "Failed to create Stripe Checkout Session");
+                await prisma_1.prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        status: "payment_failed",
+                        payment_status: "failed",
+                        cancel_reason: "Не удалось инициализировать интернет-платеж",
+                        cancelled_at: new Date(),
+                    },
+                });
+                return (0, session_1.err)(reply, "Не удалось создать интернет-платеж. Попробуйте снова или выберите другой способ оплаты.", 502);
+            }
+        }
+        // ─── Non-Stripe payment methods ─────────────────────────────
         return reply.code(201).send({
             ok: true,
             data: {
                 order_number: order.order_number,
                 tracking_token: order.tracking_token,
                 total_amount: totalAmount,
+                payment_status: order.payment_status,
             },
         });
     });
-    // GET /api/orders/track/:token
-    app.get("/orders/track/:token", async (req, reply) => {
+    // POST /api/orders/stripe/cancel
+    // Called when user returns from cancel_url. Server validates Stripe session state
+    // and expires an open session to keep DB status in sync with the real checkout state.
+    app.post("/orders/stripe/cancel", async (req, reply) => {
+        const parsed = StripeCancelSchema.safeParse(req.body);
+        if (!parsed.success)
+            return (0, session_1.err)(reply, parsed.error.message, 422);
         const order = await prisma_1.prisma.order.findFirst({
-            where: { tracking_token: req.params.token },
-            include: {
-                items: { include: { selections: true } },
+            where: {
+                tracking_token: parsed.data.tracking_token,
+                payment_method: "stripe",
             },
+            orderBy: { created_at: "desc" },
         });
         if (!order)
+            return (0, session_1.err)(reply, "Stripe-заказ не найден", 404);
+        if (order.payment_status === "paid") {
+            return (0, session_1.ok)(reply, { status: order.status, payment_status: order.payment_status });
+        }
+        if (["cancelled", "expired", "payment_failed"].includes(order.status)) {
+            return (0, session_1.ok)(reply, { status: order.status, payment_status: order.payment_status });
+        }
+        if (!order.stripe_session_id) {
+            await prisma_1.prisma.order.update({
+                where: { id: order.id },
+                data: {
+                    status: "payment_failed",
+                    payment_status: "failed",
+                    cancel_reason: "Stripe session не найдена",
+                    cancelled_at: new Date(),
+                },
+            });
+            return (0, session_1.ok)(reply, { status: "payment_failed", payment_status: "failed" });
+        }
+        const stripe = getStripe();
+        const session = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
+        if (session.status === "complete" && session.payment_status === "paid") {
+            return (0, session_1.ok)(reply, { status: order.status, payment_status: "paid" });
+        }
+        if (session.status === "expired") {
+            await prisma_1.prisma.order.updateMany({
+                where: { id: order.id, payment_status: "pending" },
+                data: {
+                    status: "expired",
+                    payment_status: "failed",
+                    cancel_reason: "Сессия интернет-платежа истекла",
+                    cancelled_at: new Date(),
+                },
+            });
+            return (0, session_1.ok)(reply, { status: "expired", payment_status: "failed" });
+        }
+        if (session.status === "open" && session.payment_status === "unpaid") {
+            await stripe.checkout.sessions.expire(session.id);
+            await prisma_1.prisma.order.updateMany({
+                where: { id: order.id, payment_status: "pending" },
+                data: {
+                    status: "cancelled",
+                    payment_status: "failed",
+                    cancel_reason: "Пользователь отменил интернет-платеж",
+                    cancelled_at: new Date(),
+                },
+            });
+            return (0, session_1.ok)(reply, { status: "cancelled", payment_status: "failed" });
+        }
+        return (0, session_1.ok)(reply, { status: order.status, payment_status: order.payment_status });
+    });
+    // GET /api/orders/track/:token
+    app.get("/orders/track/:token", async (req, reply) => {
+        const [order, settings] = await Promise.all([
+            prisma_1.prisma.order.findFirst({
+                where: { tracking_token: req.params.token },
+                include: {
+                    items: { include: { selections: true } },
+                },
+            }),
+            prisma_1.prisma.restaurantSettings.findFirst({
+                select: { min_delivery_time_minutes: true, max_delivery_time_minutes: true },
+            }),
+        ]);
+        if (!order)
             return (0, session_1.err)(reply, "Заказ не найден", 404);
-        return (0, session_1.ok)(reply, order);
+        return (0, session_1.ok)(reply, {
+            ...order,
+            estimated_min_minutes: settings?.min_delivery_time_minutes ?? 30,
+            estimated_max_minutes: settings?.max_delivery_time_minutes ?? 60,
+        });
     });
 }

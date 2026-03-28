@@ -6,6 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim();
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+
   // ─── Restaurant Settings ───
   await prisma.restaurantSettings.upsert({
     where: { id: "default" },
@@ -38,20 +41,25 @@ async function main() {
   });
 
   // ─── Admin User ───
-  const adminExists = await prisma.adminUser.findUnique({
-    where: { email: "admin@yappis.ee" },
-  });
-  if (!adminExists) {
-    await prisma.adminUser.create({
-      data: {
-        email: "admin@yappis.ee",
-        password_hash: await hash("admin123", 12),
-        full_name: "Super Admin",
-        role: "admin",
-        is_active: true,
-      },
+  if (seedAdminEmail && seedAdminPassword) {
+    const adminExists = await prisma.adminUser.findUnique({
+      where: { email: seedAdminEmail },
     });
-    console.log("✅ Admin user created: admin@yappis.ee / admin123");
+
+    if (!adminExists) {
+      await prisma.adminUser.create({
+        data: {
+          email: seedAdminEmail,
+          password_hash: await hash(seedAdminPassword, 12),
+          full_name: "Super Admin",
+          role: "admin",
+          is_active: true,
+        },
+      });
+      console.log(`✅ Admin user created: ${seedAdminEmail}`);
+    }
+  } else {
+    console.log("ℹ️  Seed admin user skipped (set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to create one)");
   }
 
   // ─── Categories ───

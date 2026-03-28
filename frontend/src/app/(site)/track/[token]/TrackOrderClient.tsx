@@ -7,57 +7,77 @@ const CART_STORAGE_KEY = "yappi_cart";
 const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
 
 const ACCEPTANCE_LABELS: Record<string, string> = {
+  awaiting_payment: "Ожидает оплату",
   new: "Ожидание",
   confirmed_preparing: "Приняли",
   ready: "Приняли",
   sent: "Приняли",
   completed: "Приняли",
+  payment_failed: "Оплата не прошла",
+  expired: "Сессия истекла",
   cancelled: "Отклонено",
 };
 const ACCEPTANCE_COLORS: Record<string, string> = {
+  awaiting_payment: "badge-gray",
   new: "badge-amber",
   confirmed_preparing: "badge-green",
   ready: "badge-green",
   sent: "badge-green",
   completed: "badge-green",
+  payment_failed: "badge-red",
+  expired: "badge-red",
   cancelled: "badge-red",
 };
 const READINESS_LABELS: Record<string, string> = {
+  awaiting_payment: "Ожидает оплату",
   new: "Ожидает",
   confirmed_preparing: "Готовится",
   ready: "Готов",
   sent: "Передан курьеру",
   completed: "Завершён",
+  payment_failed: "Не начато",
+  expired: "Не начато",
   cancelled: "Отменён",
 };
 const READINESS_COLORS: Record<string, string> = {
+  awaiting_payment: "badge-gray",
   new: "badge-gray",
   confirmed_preparing: "badge-amber",
   ready: "badge-green",
   sent: "badge-amber",
   completed: "badge-green",
+  payment_failed: "badge-red",
+  expired: "badge-red",
   cancelled: "badge-red",
 };
 const DELIVERY_LABELS: Record<string, string> = {
+  awaiting_payment: "Ожидание оплаты",
   new: "Ожидание",
   confirmed_preparing: "Ожидание",
   ready: "Ожидание",
   sent: "В процессе",
   completed: "Доставлен",
+  payment_failed: "Не начато",
+  expired: "Не начато",
   cancelled: "Отменено",
 };
 const DELIVERY_COLORS: Record<string, string> = {
+  awaiting_payment: "badge-gray",
   new: "badge-gray",
   confirmed_preparing: "badge-gray",
   ready: "badge-gray",
   sent: "badge-amber",
   completed: "badge-green",
+  payment_failed: "badge-red",
+  expired: "badge-red",
   cancelled: "badge-red",
 };
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
   pending: "⏳ Ожидание",
   paid: "✅ Оплачено",
   failed: "❌ Не оплачено",
+  refunded: "↩️ Возврат",
+  unpaid: "⏳ Не оплачено",
 };
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   stripe: "Интернет-платеж",
@@ -67,26 +87,16 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   card_on_delivery: "Картой курьеру",
 };
 
-const TERMINAL_STATUSES = new Set(["completed", "cancelled"]);
+const TERMINAL_STATUSES = new Set(["completed", "cancelled", "payment_failed", "expired"]);
 
 export default function TrackOrderClient({
   token,
-  initialPaid,
 }: {
   token: string;
-  initialPaid: boolean;
 }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const clearedRef = useRef(false);
-
-  useEffect(() => {
-    if (initialPaid && !clearedRef.current) {
-      clearedRef.current = true;
-      localStorage.removeItem(CART_STORAGE_KEY);
-      sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
-    }
-  }, [initialPaid]);
 
   useEffect(() => {
     let active = true;
@@ -121,6 +131,13 @@ export default function TrackOrderClient({
   useEffect(() => {
     if (!order || !TERMINAL_STATUSES.has(order.status)) return;
     // Nothing to do — polling will self-stop on next tick
+  }, [order]);
+
+  useEffect(() => {
+    if (!order || order.payment_status !== "paid" || clearedRef.current) return;
+    clearedRef.current = true;
+    localStorage.removeItem(CART_STORAGE_KEY);
+    sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
   }, [order]);
 
   if (loading) {

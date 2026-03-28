@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma";
-import { err, getAdminSession, ok, requireAdminSession } from "../../lib/session";
+import { err, getAdminSession, ok, requireAdminSession, requireRoles } from "../../lib/session";
 
 const KitchenSettingsSchema = z.object({
   kitchen_default_prep_minutes: z.number().int().min(1).max(240),
@@ -22,6 +22,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
   app.get("/kitchen", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const settings = await ensureSettings();
 
@@ -38,6 +39,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
   app.post("/kitchen/start-day", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const now = new Date();
     const settings = await ensureSettings();
@@ -72,6 +74,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
   app.post("/kitchen/end-day", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const settings = await ensureSettings();
     if (!settings.kitchen_is_open) {
@@ -108,6 +111,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
   app.patch("/kitchen/settings", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
     const parsed = KitchenSettingsSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);

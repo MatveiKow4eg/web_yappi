@@ -1,6 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { verifyAdminToken, AdminTokenPayload } from "./auth";
 
+type AdminRole = AdminTokenPayload["role"];
+
 export async function getAdminSession(
   req: FastifyRequest
 ): Promise<AdminTokenPayload | null> {
@@ -15,6 +17,18 @@ export function requireAdminSession(
 ): session is AdminTokenPayload {
   if (!session) {
     reply.code(401).send({ ok: false, error: "Unauthorized" });
+    return false;
+  }
+  return true;
+}
+
+export function requireRoles(
+  session: AdminTokenPayload,
+  reply: FastifyReply,
+  allowedRoles: AdminRole[]
+): boolean {
+  if (!allowedRoles.includes(session.role)) {
+    reply.code(403).send({ ok: false, error: "Forbidden" });
     return false;
   }
   return true;

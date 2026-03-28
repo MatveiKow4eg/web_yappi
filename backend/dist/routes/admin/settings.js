@@ -16,6 +16,7 @@ const SettingsSchema = zod_1.z.object({
     stripe_enabled: zod_1.z.boolean().optional(),
     cash_on_pickup_enabled: zod_1.z.boolean().optional(),
     card_on_pickup_enabled: zod_1.z.boolean().optional(),
+    kitchen_default_prep_minutes: zod_1.z.number().int().min(1).max(240).optional(),
     min_delivery_time_minutes: zod_1.z.number().int().positive().optional(),
     max_delivery_time_minutes: zod_1.z.number().int().positive().optional(),
 });
@@ -23,6 +24,8 @@ async function adminSettingsRoutes(app) {
     app.get("/settings", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         let settings = await prisma_1.prisma.restaurantSettings.findFirst();
         if (!settings) {
@@ -33,6 +36,8 @@ async function adminSettingsRoutes(app) {
     app.patch("/settings", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const parsed = SettingsSchema.safeParse(req.body);
         if (!parsed.success)

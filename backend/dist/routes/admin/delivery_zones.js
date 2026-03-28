@@ -17,6 +17,8 @@ async function adminDeliveryZonesRoutes(app) {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
             return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
+            return;
         const zones = await prisma_1.prisma.deliveryZone.findMany({
             orderBy: { name: "asc" },
         });
@@ -26,6 +28,8 @@ async function adminDeliveryZonesRoutes(app) {
     app.post("/delivery-zones", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const parsed = DeliveryZoneSchema.safeParse(req.body);
         if (!parsed.success)
@@ -45,6 +49,8 @@ async function adminDeliveryZonesRoutes(app) {
     app.patch("/delivery-zones/:id", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const { id } = req.params;
         const parsed = DeliveryZoneSchema.partial().safeParse(req.body);
@@ -66,6 +72,8 @@ async function adminDeliveryZonesRoutes(app) {
     app.delete("/delivery-zones/:id", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const { id } = req.params;
         await prisma_1.prisma.deliveryZone.delete({

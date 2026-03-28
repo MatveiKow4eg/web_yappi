@@ -84,6 +84,10 @@ const OrderSchema = z.object({
   })).min(1),
 });
 
+const StripeCancelSchema = z.object({
+  tracking_token: z.string().min(1),
+});
+
 export default async function publicOrdersRoutes(app: FastifyInstance) {
   // POST /api/orders
   app.post("/orders", async (req, reply) => {
@@ -302,7 +306,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       where: {
         payment_method: body.payment_method,
         payment_status: "pending",
-        status: { not: "cancelled" },
+        status: { notIn: ["cancelled", "payment_failed", "expired"] },
         checkout_fingerprint: checkoutFingerprint,
         created_at: { gte: new Date(Date.now() - STRIPE_ORDER_REUSE_WINDOW_MS) },
       },
@@ -342,7 +346,12 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       if (existingSession.status === "expired") {
         await prisma.order.update({
           where: { id: existingOrder.id },
-          data: { payment_status: "failed" },
+          data: {
+            status: "expired",
+            payment_status: "failed",
+            cancel_reason: "Сессия интернет-платежа истекла",
+            cancelled_at: new Date(),
+          },
         });
       }
     }
@@ -368,7 +377,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         order_number: orderNumber,
         tracking_token: trackingToken,
         type: body.type as "delivery" | "pickup",
-        status: "new",
+        status: body.payment_method === "stripe" ? "awaiting_payment" : "new",
         payment_method: body.payment_method as "stripe" | "cash_on_pickup" | "card_on_pickup" | "cash_on_delivery" | "card_on_delivery",
         payment_status: "pending",
         customer_name: body.customer_name,
@@ -456,10 +465,12 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         payment_method_types: ["card"],
         line_items: stripeLineItems,
         metadata: { orderId: order.id },
-        // success_url: user is redirected here after successful payment.
-        // ⚠️  paid=1 is cosmetic only — payment_status is set ONLY via webhook.
-        success_url: `${baseUrl}/track/${order.tracking_token}?paid=1`,
-        cancel_url: `${baseUrl}/checkout?cancelled=1`,
+        payment_intent_data: {
+          metadata: { orderId: order.id },
+        },
+        // success_url/cancel_url are only UI redirects; payment truth is the webhook.
+        success_url: `${baseUrl}/track/${order.tracking_token}`,
+        cancel_url: `${baseUrl}/checkout?cancelled=1&tracking_token=${order.tracking_token}`,
       };
 
       try {
@@ -498,7 +509,7 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         await prisma.order.update({
           where: { id: order.id },
           data: {
-            status: "cancelled",
+            status: "payment_failed",
             payment_status: "failed",
             cancel_reason: "Не удалось инициализировать интернет-платеж",
             cancelled_at: new Date(),
@@ -519,6 +530,83 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
         payment_status: order.payment_status,
       },
     });
+  });
+
+  // POST /api/orders/stripe/cancel
+  // Called when user returns from cancel_url. Server validates Stripe session state
+  // and expires an open session to keep DB status in sync with the real checkout state.
+  app.post("/orders/stripe/cancel", async (req, reply) => {
+    const parsed = StripeCancelSchema.safeParse(req.body);
+    if (!parsed.success) return err(reply, parsed.error.message, 422);
+
+    const order = await prisma.order.findFirst({
+      where: {
+        tracking_token: parsed.data.tracking_token,
+        payment_method: "stripe",
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    if (!order) return err(reply, "Stripe-заказ не найден", 404);
+
+    if (order.payment_status === "paid") {
+      return ok(reply, { status: order.status, payment_status: order.payment_status });
+    }
+
+    if (["cancelled", "expired", "payment_failed"].includes(order.status)) {
+      return ok(reply, { status: order.status, payment_status: order.payment_status });
+    }
+
+    if (!order.stripe_session_id) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: "payment_failed",
+          payment_status: "failed",
+          cancel_reason: "Stripe session не найдена",
+          cancelled_at: new Date(),
+        },
+      });
+      return ok(reply, { status: "payment_failed", payment_status: "failed" });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
+
+    if (session.status === "complete" && session.payment_status === "paid") {
+      return ok(reply, { status: order.status, payment_status: "paid" });
+    }
+
+    if (session.status === "expired") {
+      await prisma.order.updateMany({
+        where: { id: order.id, payment_status: "pending" },
+        data: {
+          status: "expired",
+          payment_status: "failed",
+          cancel_reason: "Сессия интернет-платежа истекла",
+          cancelled_at: new Date(),
+        },
+      });
+      return ok(reply, { status: "expired", payment_status: "failed" });
+    }
+
+    if (session.status === "open" && session.payment_status === "unpaid") {
+      await stripe.checkout.sessions.expire(session.id);
+
+      await prisma.order.updateMany({
+        where: { id: order.id, payment_status: "pending" },
+        data: {
+          status: "cancelled",
+          payment_status: "failed",
+          cancel_reason: "Пользователь отменил интернет-платеж",
+          cancelled_at: new Date(),
+        },
+      });
+
+      return ok(reply, { status: "cancelled", payment_status: "failed" });
+    }
+
+    return ok(reply, { status: order.status, payment_status: order.payment_status });
   });
 
   // GET /api/orders/track/:token

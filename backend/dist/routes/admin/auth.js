@@ -15,7 +15,7 @@ const LoginSchema = zod_1.z.object({
 });
 const isProduction = process.env.NODE_ENV === "production";
 const cookieDomain = isProduction
-    ? process.env.COOKIE_DOMAIN?.trim() || ".yappisushi.ee"
+    ? process.env.COOKIE_DOMAIN?.trim()
     : undefined;
 async function adminAuthRoutes(app) {
     // POST /api/admin/auth/login

@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
+import { getAdminSession, requireAdminSession, requireRoles, ok, err } from "../../lib/session";
 import { z } from "zod";
 
 const SettingsSchema = z.object({
@@ -24,6 +24,7 @@ export default async function adminSettingsRoutes(app: FastifyInstance) {
   app.get("/settings", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     let settings = await prisma.restaurantSettings.findFirst();
     if (!settings) {
@@ -35,6 +36,7 @@ export default async function adminSettingsRoutes(app: FastifyInstance) {
   app.patch("/settings", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = SettingsSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);

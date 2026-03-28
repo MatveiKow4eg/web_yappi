@@ -120,10 +120,30 @@ export default function CheckoutPage() {
     const params = new URLSearchParams(window.location.search);
 
     if (params.get("cancelled") === "1") {
-      setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
-      if (stripeAvailable) {
-        setPayment("stripe");
-      }
+      const trackingToken = params.get("tracking_token");
+
+      const syncCancellation = async () => {
+        if (!trackingToken) {
+          setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
+          if (stripeAvailable) setPayment("stripe");
+          return;
+        }
+
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/orders/stripe/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tracking_token: trackingToken }),
+          });
+        } catch {
+          // Best effort sync; user-facing notice still shown below.
+        }
+
+        setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
+        if (stripeAvailable) setPayment("stripe");
+      };
+
+      void syncCancellation();
     } else {
       setStripeNotice(null);
     }
@@ -231,6 +251,11 @@ export default function CheckoutPage() {
           if (data.data.payment_status === "paid") {
             sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
             clearCart();
+            router.push(`/track/${data.data.tracking_token}`);
+            return;
+          }
+
+          if (data.data.tracking_token) {
             router.push(`/track/${data.data.tracking_token}`);
             return;
           }

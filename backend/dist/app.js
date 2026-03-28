@@ -13,17 +13,33 @@ const products_1 = __importDefault(require("./routes/public/products"));
 const banners_1 = __importDefault(require("./routes/public/banners"));
 const orders_1 = __importDefault(require("./routes/public/orders"));
 const promo_1 = __importDefault(require("./routes/public/promo"));
+const stripe_1 = __importDefault(require("./routes/public/stripe"));
 const auth_1 = __importDefault(require("./routes/admin/auth"));
 const me_1 = __importDefault(require("./routes/admin/me"));
 const orders_2 = __importDefault(require("./routes/admin/orders"));
 const products_2 = __importDefault(require("./routes/admin/products"));
 const categories_2 = __importDefault(require("./routes/admin/categories"));
 const settings_1 = __importDefault(require("./routes/admin/settings"));
+const kitchen_1 = __importDefault(require("./routes/admin/kitchen"));
 const banners_2 = __importDefault(require("./routes/admin/banners"));
 const delivery_zones_1 = __importDefault(require("./routes/admin/delivery_zones"));
 const promo_codes_1 = __importDefault(require("./routes/admin/promo_codes"));
 const app = (0, fastify_1.default)({ logger: true });
 const start = async () => {
+    // ─── RAW BODY PARSER ────────────────────────────────────────
+    // Stripe webhook verification requires the raw request body.
+    // This replaces Fastify's built-in JSON parser: we save the raw Buffer on req,
+    // then still parse JSON so all other routes work normally.
+    app.addContentTypeParser("application/json", { parseAs: "buffer" }, (req, body, done) => {
+        req.rawBody = body;
+        try {
+            done(null, JSON.parse(body.toString("utf8")));
+        }
+        catch (err) {
+            err.statusCode = 400;
+            done(err, undefined);
+        }
+    });
     // ─── CORS ───────────────────────────────────────────────────
     const rawOrigins = process.env.ALLOWED_ORIGINS ?? "http://localhost:3000";
     const allowedOrigins = rawOrigins.split(",").map((o) => o.trim());
@@ -44,6 +60,7 @@ const start = async () => {
     app.register(banners_1.default, { prefix: "/api" });
     app.register(orders_1.default, { prefix: "/api" });
     app.register(promo_1.default, { prefix: "/api" });
+    app.register(stripe_1.default, { prefix: "/api" });
     // ─── ADMIN ROUTES ───────────────────────────────────────────
     app.register(auth_1.default, { prefix: "/api/admin" });
     app.register(me_1.default, { prefix: "/api/admin" });
@@ -51,6 +68,7 @@ const start = async () => {
     app.register(products_2.default, { prefix: "/api/admin" });
     app.register(categories_2.default, { prefix: "/api/admin" });
     app.register(settings_1.default, { prefix: "/api/admin" });
+    app.register(kitchen_1.default, { prefix: "/api/admin" });
     app.register(banners_2.default, { prefix: "/api/admin" });
     app.register(delivery_zones_1.default, { prefix: "/api/admin" });
     app.register(promo_codes_1.default, { prefix: "/api/admin" });

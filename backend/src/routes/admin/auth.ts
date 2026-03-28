@@ -12,7 +12,7 @@ const LoginSchema = z.object({
 
 const isProduction = process.env.NODE_ENV === "production";
 const cookieDomain = isProduction
-  ? process.env.COOKIE_DOMAIN?.trim() || ".yappisushi.ee"
+  ? process.env.COOKIE_DOMAIN?.trim()
   : undefined;
 
 export default async function adminAuthRoutes(app: FastifyInstance) {

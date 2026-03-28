@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
+import { getAdminSession, requireAdminSession, requireRoles, ok, err } from "../../lib/session";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
@@ -24,6 +24,7 @@ export default async function adminBannersRoutes(app: FastifyInstance) {
   app.get("/banners", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const banners = await prisma.banner.findMany({
       orderBy: { sort_order: "asc" },
@@ -35,6 +36,7 @@ export default async function adminBannersRoutes(app: FastifyInstance) {
   app.post("/banners", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = BannerSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -67,6 +69,7 @@ export default async function adminBannersRoutes(app: FastifyInstance) {
   app.patch("/banners/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const { id } = req.params as { id: string };
     const parsed = BannerSchema.partial().safeParse(req.body);
@@ -97,6 +100,7 @@ export default async function adminBannersRoutes(app: FastifyInstance) {
   app.delete("/banners/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const { id } = req.params as { id: string };
 

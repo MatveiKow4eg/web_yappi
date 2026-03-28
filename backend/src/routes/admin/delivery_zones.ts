@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
+import { getAdminSession, requireAdminSession, requireRoles, ok, err } from "../../lib/session";
 import { z } from "zod";
 
 const DeliveryZoneSchema = z.object({
@@ -16,6 +16,7 @@ export default async function adminDeliveryZonesRoutes(app: FastifyInstance) {
   app.get("/delivery-zones", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const zones = await prisma.deliveryZone.findMany({
       orderBy: { name: "asc" },
@@ -27,6 +28,7 @@ export default async function adminDeliveryZonesRoutes(app: FastifyInstance) {
   app.post("/delivery-zones", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = DeliveryZoneSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -48,6 +50,7 @@ export default async function adminDeliveryZonesRoutes(app: FastifyInstance) {
   app.patch("/delivery-zones/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const { id } = req.params as { id: string };
     const parsed = DeliveryZoneSchema.partial().safeParse(req.body);
@@ -71,6 +74,7 @@ export default async function adminDeliveryZonesRoutes(app: FastifyInstance) {
   app.delete("/delivery-zones/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const { id } = req.params as { id: string };
 

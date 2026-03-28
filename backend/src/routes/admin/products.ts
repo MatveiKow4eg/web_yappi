@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma";
-import { getAdminSession, requireAdminSession, ok, err } from "../../lib/session";
+import { getAdminSession, requireAdminSession, requireRoles, ok, err } from "../../lib/session";
 import { z } from "zod";
 
 const ImageRefSchema = z.string().trim().refine(
@@ -48,6 +48,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const session = await getAdminSession(req);
       if (!requireAdminSession(session, reply)) return;
+      if (!requireRoles(session, reply, ["admin"])) return;
 
       const { category, page = "1", limit = "50" } = req.query;
       const [products, total] = await Promise.all([
@@ -94,6 +95,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>("/products/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const product = await prisma.product.findUnique({
       where: { id: req.params.id },
@@ -134,6 +136,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
   app.post("/products", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = ProductSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -154,6 +157,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string } }>("/products/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     const parsed = UpdateSchema.safeParse(req.body);
     if (!parsed.success) return err(reply, parsed.error.message);
@@ -171,6 +175,7 @@ export default async function adminProductsRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>("/products/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
 
     await prisma.product.update({ where: { id: req.params.id }, data: { is_active: false, is_hidden: true } });
     return ok(reply, null);

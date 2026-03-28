@@ -24,6 +24,8 @@ async function adminBannersRoutes(app) {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
             return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
+            return;
         const banners = await prisma_1.prisma.banner.findMany({
             orderBy: { sort_order: "asc" },
         });
@@ -33,6 +35,8 @@ async function adminBannersRoutes(app) {
     app.post("/banners", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const parsed = BannerSchema.safeParse(req.body);
         if (!parsed.success)
@@ -63,6 +67,8 @@ async function adminBannersRoutes(app) {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
             return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
+            return;
         const { id } = req.params;
         const parsed = BannerSchema.partial().safeParse(req.body);
         if (!parsed.success)
@@ -90,6 +96,8 @@ async function adminBannersRoutes(app) {
     app.delete("/banners/:id", async (req, reply) => {
         const session = await (0, session_1.getAdminSession)(req);
         if (!(0, session_1.requireAdminSession)(session, reply))
+            return;
+        if (!(0, session_1.requireRoles)(session, reply, ["admin"]))
             return;
         const { id } = req.params;
         await prisma_1.prisma.banner.delete({
