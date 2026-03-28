@@ -163,8 +163,8 @@ export default function KitchenOrderActions({
         </button>
       )}
 
-      {/* Sent → completed */}
-      {currentStatus === "sent" && (
+      {/* Sent → completed (pickup only — delivery is confirmed by customer) */}
+      {currentStatus === "sent" && orderType !== "delivery" && (
         <button
           onClick={() => changeStatus("completed")}
           disabled={loading}
@@ -172,6 +172,11 @@ export default function KitchenOrderActions({
         >
           ✅ Закрыть заказ
         </button>
+      )}
+      {currentStatus === "sent" && orderType === "delivery" && (
+        <div className="py-2 px-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs text-center">
+          Заказ передан курьеру. Ждём подтверждения клиента.
+        </div>
       )}
 
       {/* Delete button — non-Stripe only */}

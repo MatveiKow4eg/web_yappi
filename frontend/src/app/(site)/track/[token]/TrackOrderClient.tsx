@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { AppApi, type Order } from "@/lib/api-client";
@@ -7,72 +7,6 @@ import { useCart } from "@/lib/cart-context";
 const CART_STORAGE_KEY = "yappi_cart";
 const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
 
-const ACCEPTANCE_LABELS: Record<string, string> = {
-  awaiting_payment: "Ожидает оплату",
-  new: "Ожидание",
-  confirmed_preparing: "Приняли",
-  ready: "Приняли",
-  sent: "Приняли",
-  completed: "Приняли",
-  payment_failed: "Оплата не прошла",
-  expired: "Сессия истекла",
-  cancelled: "Отклонено",
-};
-const ACCEPTANCE_COLORS: Record<string, string> = {
-  awaiting_payment: "badge-gray",
-  new: "badge-amber",
-  confirmed_preparing: "badge-green",
-  ready: "badge-green",
-  sent: "badge-green",
-  completed: "badge-green",
-  payment_failed: "badge-red",
-  expired: "badge-red",
-  cancelled: "badge-red",
-};
-const READINESS_LABELS: Record<string, string> = {
-  awaiting_payment: "Ожидает оплату",
-  new: "Ожидает",
-  confirmed_preparing: "Готовится",
-  ready: "Готов",
-  sent: "Передан курьеру",
-  completed: "Завершён",
-  payment_failed: "Не начато",
-  expired: "Не начато",
-  cancelled: "Отменён",
-};
-const READINESS_COLORS: Record<string, string> = {
-  awaiting_payment: "badge-gray",
-  new: "badge-gray",
-  confirmed_preparing: "badge-amber",
-  ready: "badge-green",
-  sent: "badge-amber",
-  completed: "badge-green",
-  payment_failed: "badge-red",
-  expired: "badge-red",
-  cancelled: "badge-red",
-};
-const DELIVERY_LABELS: Record<string, string> = {
-  awaiting_payment: "Ожидание оплаты",
-  new: "Ожидание",
-  confirmed_preparing: "Ожидание",
-  ready: "Ожидание",
-  sent: "В процессе",
-  completed: "Доставлен",
-  payment_failed: "Не начато",
-  expired: "Не начато",
-  cancelled: "Отменено",
-};
-const DELIVERY_COLORS: Record<string, string> = {
-  awaiting_payment: "badge-gray",
-  new: "badge-gray",
-  confirmed_preparing: "badge-gray",
-  ready: "badge-gray",
-  sent: "badge-amber",
-  completed: "badge-green",
-  payment_failed: "badge-red",
-  expired: "badge-red",
-  cancelled: "badge-red",
-};
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
   pending: "⏳ Ожидание",
   paid: "✅ Оплачено",
@@ -90,14 +24,30 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 
 const TERMINAL_STATUSES = new Set(["completed", "cancelled", "payment_failed", "expired"]);
 
-export default function TrackOrderClient({
-  token,
-}: {
-  token: string;
-}) {
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin w-3.5 h-3.5 text-amber-400 inline-block mr-1"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
+
+function TimeDot({ minutes }: { minutes: number }) {
+  const color =
+    minutes <= 25 ? "bg-green-400" : minutes <= 60 ? "bg-amber-400" : "bg-red-500";
+  return <span className={`inline-block w-2.5 h-2.5 rounded-full ${color} mr-1.5 shrink-0`} />;
+}
+
+export default function TrackOrderClient({ token }: { token: string }) {
   const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
   const clearedRef = useRef(false);
 
   useEffect(() => {
@@ -117,7 +67,6 @@ export default function TrackOrderClient({
     fetchOrder();
 
     const interval = setInterval(async () => {
-      // Stop polling once order is in a terminal state
       if (order && TERMINAL_STATUSES.has(order.status)) return;
       await fetchOrder();
     }, 5_000);
@@ -126,14 +75,8 @@ export default function TrackOrderClient({
       active = false;
       clearInterval(interval);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
-
-  // Keep interval up-to-date with latest order status
-  useEffect(() => {
-    if (!order || !TERMINAL_STATUSES.has(order.status)) return;
-    // Nothing to do — polling will self-stop on next tick
-  }, [order]);
 
   useEffect(() => {
     if (!order || order.payment_status !== "paid" || clearedRef.current) return;
@@ -142,6 +85,18 @@ export default function TrackOrderClient({
     localStorage.removeItem(CART_STORAGE_KEY);
     sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
   }, [order, clearCart]);
+
+  async function handleConfirmReceived() {
+    setConfirming(true);
+    try {
+      const updated = await AppApi.orders.confirmReceived(token);
+      setOrder(updated);
+    } catch {
+      // will re-poll
+    } finally {
+      setConfirming(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -159,17 +114,73 @@ export default function TrackOrderClient({
     );
   }
 
-  const acceptanceLabel = ACCEPTANCE_LABELS[order.status] ?? "Ожидание";
-  const acceptanceColor = ACCEPTANCE_COLORS[order.status] ?? "badge-gray";
-  const readinessLabel = READINESS_LABELS[order.status] ?? order.status;
-  const readinessColor = READINESS_COLORS[order.status] ?? "badge-gray";
-  const deliveryLabel = DELIVERY_LABELS[order.status] ?? "Ожидание";
-  const deliveryColor = DELIVERY_COLORS[order.status] ?? "badge-gray";
-  const showEstimated = !TERMINAL_STATUSES.has(order.status);
   const isTerminal = TERMINAL_STATUSES.has(order.status);
+  const isPending = order.status === "new";
+  const isAccepted = ["confirmed_preparing", "ready", "sent", "completed"].includes(order.status);
+  const isCooking = order.status === "confirmed_preparing";
+  const isReady = ["ready", "sent", "completed"].includes(order.status);
+  const isSent = order.status === "sent";
+  const isCompleted = order.status === "completed";
+  const isCancelled = ["cancelled", "payment_failed", "expired"].includes(order.status);
+
+  const prepMinutes = order.estimated_prep_minutes;
+  const showEstimatedRow =
+    ["confirmed_preparing", "ready", "sent"].includes(order.status) && !!prepMinutes;
+
+  // Row 1 — acceptance badge
+  let acceptanceBadge: React.ReactNode;
+  if (order.status === "awaiting_payment") {
+    acceptanceBadge = <span className="badge-gray">Ожидает оплату</span>;
+  } else if (isPending) {
+    acceptanceBadge = (
+      <span className="badge-amber flex items-center gap-1">
+        <Spinner />
+        Ожидание
+      </span>
+    );
+  } else if (isAccepted) {
+    acceptanceBadge = <span className="badge-green">Принят ✓</span>;
+  } else if (isCancelled) {
+    const label =
+      order.status === "cancelled"
+        ? "Отклонён"
+        : order.status === "expired"
+          ? "Истёк"
+          : "Ошибка оплаты";
+    acceptanceBadge = <span className="badge-red">{label}</span>;
+  } else {
+    acceptanceBadge = <span className="badge-gray">{order.status}</span>;
+  }
+
+  // Row 3 — readiness badge
+  let readinessBadge: React.ReactNode;
+  if (isCooking) {
+    readinessBadge = <span className="badge-green">Готовится</span>;
+  } else if (isReady) {
+    readinessBadge = <span className="badge-green">Готов ✓</span>;
+  } else if (isCancelled) {
+    readinessBadge = <span className="badge-red">Отменён</span>;
+  } else {
+    readinessBadge = <span className="badge-gray">Ожидает</span>;
+  }
+
+  // Row 4 — delivery badge
+  let deliveryBadge: React.ReactNode;
+  if (isSent) {
+    deliveryBadge = <span className="badge-green">В пути 🚚</span>;
+  } else if (isCompleted) {
+    deliveryBadge = <span className="badge-green">Доставлен ✓</span>;
+  } else if (isCancelled) {
+    deliveryBadge = <span className="badge-red">Отменено</span>;
+  } else {
+    deliveryBadge = <span className="badge-gray">Ожидание</span>;
+  }
+
+  const showConfirmButton = isSent && order.type === "delivery";
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white mb-1">Статус заказа</h1>
         <div className="flex items-center gap-2">
@@ -183,22 +194,23 @@ export default function TrackOrderClient({
         </div>
       </div>
 
-      {/* Status list card */}
+      {/* Status card */}
       <div className="card p-6 mb-6">
         <h2 className="font-bold text-white mb-4">Статус заказа</h2>
 
         {/* Row 1: Acceptance */}
         <div className="flex items-center justify-between py-3 border-b border-white/5">
           <span className="text-sm text-brand-text-muted">Ожидание</span>
-          <span className={acceptanceColor}>{acceptanceLabel}</span>
+          {acceptanceBadge}
         </div>
 
-        {/* Row 2: Estimated wait */}
-        {showEstimated && (
+        {/* Row 2: Estimated wait with colored dot */}
+        {showEstimatedRow && (
           <div className="flex items-center justify-between py-3 border-b border-white/5">
             <span className="text-sm text-brand-text-muted">Примерное ожидание</span>
-            <span className="text-white text-sm font-medium">
-              {order.estimated_min_minutes ?? 30}–{order.estimated_max_minutes ?? 60} мин
+            <span className="flex items-center text-white text-sm font-medium">
+              <TimeDot minutes={prepMinutes!} />
+              {prepMinutes} мин
             </span>
           </div>
         )}
@@ -210,19 +222,35 @@ export default function TrackOrderClient({
           }`}
         >
           <span className="text-sm text-brand-text-muted">Готовность заказа</span>
-          <span className={readinessColor}>{readinessLabel}</span>
+          {readinessBadge}
         </div>
 
         {/* Row 4: Delivery */}
         {order.type === "delivery" && (
           <div className="flex items-center justify-between py-3">
             <span className="text-sm text-brand-text-muted">Доставка</span>
-            <span className={deliveryColor}>{deliveryLabel}</span>
+            {deliveryBadge}
           </div>
         )}
       </div>
 
-      {/* Order details card */}
+      {/* Confirm received button */}
+      {showConfirmButton && (
+        <div className="mb-6">
+          <button
+            onClick={handleConfirmReceived}
+            disabled={confirming}
+            className="btn-primary w-full py-4 text-base"
+          >
+            {confirming ? "Подтверждаем…" : "✅ Заказ получен"}
+          </button>
+          <p className="text-xs text-brand-text-muted text-center mt-2">
+            Нажмите, когда получите заказ от курьера
+          </p>
+        </div>
+      )}
+
+      {/* Order details */}
       <div className="card p-6 mb-6">
         <h2 className="font-bold text-white mb-4">Детали заказа</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">

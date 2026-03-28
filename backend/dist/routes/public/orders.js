@@ -683,4 +683,30 @@ async function publicOrdersRoutes(app) {
             estimated_max_minutes: settings?.max_delivery_time_minutes ?? 60,
         });
     });
+    // POST /api/orders/track/:token/confirm-received
+    // Customer confirms they received the delivery (only when status = "sent")
+    app.post("/orders/track/:token/confirm-received", async (req, reply) => {
+        const order = await prisma_1.prisma.order.findFirst({
+            where: { tracking_token: req.params.token },
+        });
+        if (!order)
+            return (0, session_1.err)(reply, "Заказ не найден", 404);
+        if (order.status !== "sent")
+            return (0, session_1.err)(reply, "Заказ пока не передан курьеру", 422);
+        const [updated, settings] = await Promise.all([
+            prisma_1.prisma.order.update({
+                where: { id: order.id },
+                data: { status: "completed", completed_at: new Date() },
+                include: { items: { include: { selections: true } } },
+            }),
+            prisma_1.prisma.restaurantSettings.findFirst({
+                select: { min_delivery_time_minutes: true, max_delivery_time_minutes: true },
+            }),
+        ]);
+        return (0, session_1.ok)(reply, {
+            ...updated,
+            estimated_min_minutes: settings?.min_delivery_time_minutes ?? 30,
+            estimated_max_minutes: settings?.max_delivery_time_minutes ?? 60,
+        });
+    });
 }
