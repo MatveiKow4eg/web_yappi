@@ -121,12 +121,10 @@ export interface AdminLoginRequest {
 }
 
 export interface AdminAuthResponse {
-  ok: boolean;
-  data: {
-    id: string;
-    email: string;
-    role: "admin" | "kitchen";
-  };
+  id: string;
+  email: string;
+  role: "admin" | "kitchen";
+  full_name?: string | null;
 }
 
 export async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {

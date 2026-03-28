@@ -17,7 +17,7 @@ export default function KitchenLoginPage() {
     try {
       const data = await AppApi.admin.auth.login({ email, password });
 
-      if (data.data.role !== "admin" && data.data.role !== "kitchen") {
+      if (data.role !== "admin" && data.role !== "kitchen") {
         setError("У этой учётной записи нет доступа к кухне.");
         return;
       }
