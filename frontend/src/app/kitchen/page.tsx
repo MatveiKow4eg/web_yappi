@@ -64,6 +64,8 @@ export default function KitchenPage() {
   const [historyByDay, setHistoryByDay] = useState<Array<{ dayKey: string; dayLabel: string; orders: number; rolls: number; total: number }>>([]);
   const [statsLoading, setStatsLoading] = useState(false);
   const [shiftStats, setShiftStats] = useState<KitchenShiftStats | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showShiftModal, setShowShiftModal] = useState(false);
 
   const fetchOrders = useCallback(async () => {
@@ -132,6 +134,8 @@ export default function KitchenPage() {
       sessionRef.current = updated;
       setShiftStats(null);
       setShowOrderTimeEditor(false);
+      setShowStats(false);
+      setShowHistory(false);
       await fetchOrders();
     } catch {}
     setOpeningDay(false);
@@ -147,6 +151,7 @@ export default function KitchenPage() {
       setShowOrderTimeEditor(false);
       setSelectedId(null);
       await fetchOrders();
+      setShowStats(true);
       await loadShiftStats();
     } catch {}
     setClosingDay(false);
@@ -171,7 +176,9 @@ export default function KitchenPage() {
   }
 
   async function loadHistoryByDays() {
+    if (historyByDay.length > 0 && showHistory) { setShowHistory(false); return; }
     setHistoryLoading(true);
+    setShowHistory(true);
     try {
       const res = await AppApi.admin.orders.list({
         statuses: "new,confirmed_preparing,ready,sent,completed,cancelled",
@@ -221,7 +228,9 @@ export default function KitchenPage() {
   }
 
   async function loadShiftStats() {
+    if (shiftStats && showStats) { setShowStats(false); return; }
     setStatsLoading(true);
+    setShowStats(true);
     try {
       const stats = await AppApi.admin.kitchen.shiftStats();
       setShiftStats(stats);
@@ -324,7 +333,7 @@ export default function KitchenPage() {
               </button>
             </div>
 
-            {shiftStats && (
+            {shiftStats && showStats && (
               <div className="card p-3 mt-4">
                 <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">
                   Статистика смены
@@ -349,7 +358,7 @@ export default function KitchenPage() {
               </div>
             )}
 
-            {historyByDay.length > 0 && (
+            {historyByDay.length > 0 && showHistory && (
               <div className="card p-3 mt-4 max-h-48 overflow-y-auto">
                 <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">История по дням</p>
                 <div className="space-y-2">
@@ -388,7 +397,7 @@ export default function KitchenPage() {
             </button>
           </div>
 
-          {shiftStats && (
+          {shiftStats && showStats && (
             <div className="card p-4 max-w-sm w-full">
               <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">
                 Статистика смены
@@ -413,7 +422,7 @@ export default function KitchenPage() {
             </div>
           )}
 
-          {historyByDay.length > 0 && (
+          {historyByDay.length > 0 && showHistory && (
             <div className="card p-3 mt-4 max-w-md w-full max-h-48 overflow-y-auto">
               <p className="text-xs text-brand-text-muted mb-2 uppercase tracking-wider">История по дням</p>
               <div className="space-y-2">

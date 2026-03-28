@@ -39,6 +39,19 @@ function kitchenPayload(s: {
   };
 }
 
+/** Returns the UTC timestamp for midnight at the start of the day
+ *  that `date` falls in, using the given IANA timezone. */
+function startOfDayInTz(date: Date, tz: string): Date {
+  const dateStr = date.toLocaleDateString("sv", { timeZone: tz }); // "YYYY-MM-DD"
+  const pivotUtc = new Date(`${dateStr}T00:00:00Z`);
+  const [h, m, s] = pivotUtc
+    .toLocaleTimeString("en-US", { timeZone: tz, hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    .split(":")
+    .map(Number);
+  // pivotUtc is midnight UTC; subtract the tz offset to get true midnight in tz
+  return new Date(pivotUtc.getTime() - (h * 3600 + m * 60 + s) * 1000);
+}
+
 export default async function adminKitchenRoutes(app: FastifyInstance) {
   app.get("/kitchen", async (req, reply) => {
     const session = await getAdminSession(req);
@@ -163,20 +176,24 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
       });
     }
 
-    const from = settings.kitchen_day_started_at;
-    const to = settings.kitchen_day_ended_at ?? new Date();
+    // Anchor to the calendar day (Europe/Tallinn) the shift started on.
+    // This means closing + reopening on the same day still shows full-day stats.
+    const refDate = settings.kitchen_day_started_at;
+    const from = startOfDayInTz(refDate, "Europe/Tallinn");
+    const to = new Date(from.getTime() + 24 * 60 * 60 * 1000); // next midnight
+
     const activeStatuses = ["new", "confirmed_preparing", "ready", "sent", "completed"] as const;
 
     const [ordersCount, sumRevenue, sumRolls] = await Promise.all([
       prisma.order.count({
         where: {
-          created_at: { gte: from, lte: to },
+          created_at: { gte: from, lt: to },
           status: { in: [...activeStatuses] },
         },
       }),
       prisma.order.aggregate({
         where: {
-          created_at: { gte: from, lte: to },
+          created_at: { gte: from, lt: to },
           status: { in: [...activeStatuses] },
         },
         _sum: { total_amount: true },
@@ -184,7 +201,7 @@ export default async function adminKitchenRoutes(app: FastifyInstance) {
       prisma.orderItem.aggregate({
         where: {
           order: {
-            created_at: { gte: from, lte: to },
+            created_at: { gte: from, lt: to },
             status: { in: [...activeStatuses] },
           },
         },
