@@ -215,7 +215,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
     return ok(reply, order);
   });
 
-  // DELETE /api/admin/orders/:id  (non-Stripe orders only)
+  // DELETE /api/admin/orders/:id
   app.delete<{ Params: { id: string } }>("/orders/:id", async (req, reply) => {
     const session = await getAdminSession(req);
     if (!requireAdminSession(session, reply)) return;
@@ -227,9 +227,6 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
     });
 
     if (!order) return err(reply, "Заказ не найден", 404);
-    if (order.payment_method === "stripe") {
-      return err(reply, "Нельзя удалить заказ с онлайн-оплатой", 403);
-    }
 
     await prisma.order.delete({ where: { id: order.id } });
 
