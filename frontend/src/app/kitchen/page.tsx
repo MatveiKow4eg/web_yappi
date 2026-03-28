@@ -275,36 +275,48 @@ export default function KitchenPage() {
               </button>
 
               {showOrderTimeEditor && (
-                <div className="card p-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <label>
-                      <span className="block text-xs text-brand-text-muted mb-1">Самовывоз, мин</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={240}
-                        value={pickupMinutes}
-                        onChange={(e) => setPickupMinutes(e.target.value)}
-                        className="input text-sm"
-                      />
-                    </label>
-                    <label>
-                      <span className="block text-xs text-brand-text-muted mb-1">Доставка, мин</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={240}
-                        value={deliveryMinutes}
-                        onChange={(e) => setDeliveryMinutes(e.target.value)}
-                        className="input text-sm"
-                      />
-                    </label>
+                <div className="card p-3 space-y-3">
+                  <div>
+                    <p className="text-xs text-brand-text-muted mb-2">Самовывоз, мин</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => setPickupMinutes(String(Math.max(1, parseInt(pickupMinutes, 10) - 5)))}
+                        className="btn-secondary py-2 px-3 text-sm"
+                      >
+                        −5
+                      </button>
+                      <span className="text-white font-bold text-lg w-12 text-center">{pickupMinutes}</span>
+                      <button
+                        onClick={() => setPickupMinutes(String(Math.min(240, parseInt(pickupMinutes, 10) + 5)))}
+                        className="btn-secondary py-2 px-3 text-sm"
+                      >
+                        +5
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-3">
-                    <button onClick={saveKitchenTimes} disabled={savingTimes} className="btn-primary py-2 w-full">
-                      {savingTimes ? "Сохранение..." : "Сохранить время"}
-                    </button>
+
+                  <div>
+                    <p className="text-xs text-brand-text-muted mb-2">Доставка, мин</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => setDeliveryMinutes(String(Math.max(1, parseInt(deliveryMinutes, 10) - 5)))}
+                        className="btn-secondary py-2 px-3 text-sm"
+                      >
+                        −5
+                      </button>
+                      <span className="text-white font-bold text-lg w-12 text-center">{deliveryMinutes}</span>
+                      <button
+                        onClick={() => setDeliveryMinutes(String(Math.min(240, parseInt(deliveryMinutes, 10) + 5)))}
+                        className="btn-secondary py-2 px-3 text-sm"
+                      >
+                        +5
+                      </button>
+                    </div>
                   </div>
+
+                  <button onClick={saveKitchenTimes} disabled={savingTimes} className="btn-primary py-2 w-full">
+                    {savingTimes ? "Сохранение..." : "Сохранить время"}
+                  </button>
                 </div>
               )}
 
