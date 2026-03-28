@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
@@ -18,7 +18,7 @@ const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, clearCart } = useCart();
   const stripeAvailable = Boolean(STRIPE_PUBLISHABLE_KEY);
 
   const [type, setType] = useState<OrderType>("delivery");
@@ -34,9 +34,23 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoData, setPromoData] = useState<{
+  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [serverQuote, setServerQuote] = useState<{
+    items: Array<{
+      product_id: string;
+      product_variant_id?: string;
+      mode: "full" | "v1" | "v2";
+      name: string;
+      unit_price: number;
+      quantity: number;
+      line_total: number;
+    }>;
+    subtotal: number;
+    delivery_fee: number;
     discount_amount: number;
-    description: string | null;
+    total_amount: number;
+    promo_code?: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,20 +169,79 @@ export default function CheckoutPage() {
     }
   }, [payment, stripeAvailable, type]);
 
+  const requestQuote = useCallback(async (showErrors: boolean, promoCodeOverride?: string | null) => {
+    if (type === "delivery" && !address.trim()) {
+      setServerQuote(null);
+      if (showErrors) {
+        setError("Укажите адрес доставки");
+      }
+      return null;
+    }
+
+    setQuoteLoading(true);
+    if (showErrors) setError(null);
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/orders/quote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          payment_method: payment,
+          customer_phone: phone || undefined,
+          address_line: type === "delivery" ? address : undefined,
+          promo_code: (promoCodeOverride ?? appliedPromoCode) || undefined,
+          items: items.map((i) => ({
+            product_id: i.product_id,
+            product_variant_id: i.product_variant_id,
+            mode: i.mode ?? "full",
+            quantity: i.quantity,
+            selections: i.selections.map((s) => ({
+              option_item_id: s.option_item_id,
+              quantity: s.quantity,
+            })),
+          })),
+        }),
+      });
+
+      const data = await res.json();
+      if (!data.ok) {
+        setServerQuote(null);
+        if (showErrors) {
+          setError(data.error ?? "Не удалось рассчитать заказ");
+        }
+        return null;
+      }
+
+      setServerQuote(data.data);
+      return data.data;
+    } catch {
+      setServerQuote(null);
+      if (showErrors) {
+        setError("Ошибка соединения. Попробуйте снова.");
+      }
+      return null;
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [address, appliedPromoCode, items, payment, phone, type]);
+
+  useEffect(() => {
+    if (!draftReady || items.length === 0) return;
+    void requestQuote(false);
+  }, [draftReady, items.length, requestQuote]);
+
   async function applyPromo() {
     if (!promoCode.trim()) return;
     setPromoLoading(true);
     setPromoError(null);
-    setPromoData(null);
+    const code = promoCode.trim().toUpperCase();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/promo-codes/validate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: promoCode, subtotal, phone }),
-      });
-      const data = await res.json();
-      if (!data.ok) setPromoError(data.error ?? "Промокод недействителен");
-      else setPromoData(data.data);
+      setAppliedPromoCode(code);
+      const quote = await requestQuote(true, code);
+      if (!quote) {
+        setPromoError("Промокод недействителен");
+      }
     } catch {
       setPromoError("Ошибка соединения");
     } finally {
@@ -199,15 +272,14 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (loading) return;
 
-    if (type === "delivery" && !address.trim()) {
-      setError("Укажите адрес доставки");
-      return;
-    }
     setError(null);
     setStripeNotice(null);
     setLoading(true);
 
     try {
+      const quote = await requestQuote(true);
+      if (!quote) return;
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -222,11 +294,12 @@ export default function CheckoutPage() {
           floor: floor || undefined,
           door_code: doorCode || undefined,
           comment: comment || undefined,
-          promo_code: promoCode || undefined,
+          promo_code: appliedPromoCode || undefined,
           language_code: "ru",
           items: items.map((i) => ({
             product_id: i.product_id,
             product_variant_id: i.product_variant_id,
+            mode: i.mode ?? "full",
             quantity: i.quantity,
             selections: i.selections.map((s) => ({
               option_item_id: s.option_item_id,
@@ -454,7 +527,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       value={promoCode}
-                      onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoData(null); setPromoError(null); }}
+                      onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(null); }}
                       className="input flex-1"
                       placeholder="WELCOME10"
                     />
@@ -468,8 +541,8 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                   {promoError && <p className="text-brand-red text-xs mt-1.5">{promoError}</p>}
-                  {promoData && (
-                    <p className="text-green-400 text-xs mt-1.5">✓ {promoData.description ?? "Скидка"}: −{promoData.discount_amount.toFixed(2)} €</p>
+                  {(serverQuote?.discount_amount ?? 0) > 0 && appliedPromoCode && (
+                    <p className="text-green-400 text-xs mt-1.5">✓ Промокод {appliedPromoCode}: −{(serverQuote?.discount_amount ?? 0).toFixed(2)} €</p>
                   )}
                 </div>
                 <div>
@@ -493,13 +566,13 @@ export default function CheckoutPage() {
             <div className="card p-6 sticky top-4">
               <h2 className="font-bold text-white mb-4">Сводка заказа</h2>
               <div className="space-y-3 mb-4">
-                {items.map((item) => (
-                  <div key={item.key} className="flex justify-between text-sm">
+                {(serverQuote?.items ?? []).map((item, idx) => (
+                  <div key={`${item.product_id}_${item.product_variant_id ?? ""}_${item.mode}_${idx}`} className="flex justify-between text-sm">
                     <span className="text-brand-text-muted">
                       {item.name} × {item.quantity}
                     </span>
                     <span className="text-white">
-                      {(item.unit_price * item.quantity).toFixed(2)} €
+                      {item.line_total.toFixed(2)} €
                     </span>
                   </div>
                 ))}
@@ -508,18 +581,18 @@ export default function CheckoutPage() {
               <div className="pt-4 mt-4 border-t border-white/5 space-y-1.5 text-sm">
                 <div className="flex justify-between text-brand-text-muted">
                   <span>Подытог</span>
-                  <span>{subtotal.toFixed(2)} €</span>
+                  <span>{(serverQuote?.subtotal ?? 0).toFixed(2)} €</span>
                 </div>
-                {promoData && (
+                {(serverQuote?.discount_amount ?? 0) > 0 && appliedPromoCode && (
                   <div className="flex justify-between text-green-400">
-                    <span>Скидка ({promoCode})</span>
-                    <span>−{promoData.discount_amount.toFixed(2)} €</span>
+                    <span>Скидка ({appliedPromoCode})</span>
+                    <span>−{(serverQuote?.discount_amount ?? 0).toFixed(2)} €</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-white pt-1 border-t border-white/5">
                   <span>Итого</span>
                   <span className="text-brand-red">
-                    {(subtotal - (promoData?.discount_amount ?? 0)).toFixed(2)} €
+                    {(serverQuote?.total_amount ?? 0).toFixed(2)} €
                   </span>
                 </div>
               </div>
@@ -532,10 +605,10 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || quoteLoading || !serverQuote}
                 className="btn-primary w-full mt-4 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Оформляем..." : "Оформить заказ"}
+                {loading ? "Оформляем..." : quoteLoading ? "Пересчет..." : "Оформить заказ"}
               </button>
             </div>
           </div>

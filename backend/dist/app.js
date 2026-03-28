@@ -12,7 +12,6 @@ const categories_1 = __importDefault(require("./routes/public/categories"));
 const products_1 = __importDefault(require("./routes/public/products"));
 const banners_1 = __importDefault(require("./routes/public/banners"));
 const orders_1 = __importDefault(require("./routes/public/orders"));
-const promo_1 = __importDefault(require("./routes/public/promo"));
 const stripe_1 = __importDefault(require("./routes/public/stripe"));
 const auth_1 = __importDefault(require("./routes/admin/auth"));
 const me_1 = __importDefault(require("./routes/admin/me"));
@@ -59,7 +58,6 @@ const start = async () => {
     app.register(products_1.default, { prefix: "/api" });
     app.register(banners_1.default, { prefix: "/api" });
     app.register(orders_1.default, { prefix: "/api" });
-    app.register(promo_1.default, { prefix: "/api" });
     app.register(stripe_1.default, { prefix: "/api" });
     // ─── ADMIN ROUTES ───────────────────────────────────────────
     app.register(auth_1.default, { prefix: "/api/admin" });

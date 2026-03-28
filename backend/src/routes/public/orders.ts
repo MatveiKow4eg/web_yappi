@@ -32,6 +32,7 @@ function buildCheckoutFingerprint(input: {
   items: Array<{
     product_id: string;
     product_variant_id?: string;
+    mode?: "full" | "v1" | "v2";
     quantity: number;
     selections: Array<{
       option_item_id: string;
@@ -46,6 +47,7 @@ function buildCheckoutFingerprint(input: {
       .map((item) => ({
         ...item,
         product_variant_id: item.product_variant_id ?? null,
+        mode: item.mode ?? "full",
         selections: item.selections
           .map((selection) => ({
             option_item_id: selection.option_item_id,
@@ -76,6 +78,26 @@ const OrderSchema = z.object({
   items: z.array(z.object({
     product_id: z.string(),
     product_variant_id: z.string().optional(),
+    mode: z.enum(["full", "v1", "v2"]).optional().default("full"),
+    quantity: z.number().int().positive(),
+    selections: z.array(z.object({
+      option_item_id: z.string(),
+      quantity: z.number().int().positive().default(1),
+    })).default([]),
+  })).min(1),
+});
+
+const OrderQuoteSchema = z.object({
+  type: z.enum(["delivery", "pickup"]),
+  payment_method: z.enum(["stripe", "cash_on_pickup", "card_on_pickup", "cash_on_delivery", "card_on_delivery"]).optional(),
+  customer_phone: z.string().min(7).optional(),
+  address_line: z.string().optional(),
+  promo_code: z.string().optional(),
+  delivery_zone_id: z.string().optional(),
+  items: z.array(z.object({
+    product_id: z.string(),
+    product_variant_id: z.string().optional(),
+    mode: z.enum(["full", "v1", "v2"]).optional().default("full"),
     quantity: z.number().int().positive(),
     selections: z.array(z.object({
       option_item_id: z.string(),
@@ -88,7 +110,278 @@ const StripeCancelSchema = z.object({
   tracking_token: z.string().min(1),
 });
 
+function buildLineItemDisplayName(input: {
+  productName: string;
+  variantName?: string;
+  pieces?: number | null;
+}) {
+  if (input.variantName) {
+    return `${input.productName} (${input.variantName})`;
+  }
+
+  if (input.pieces) {
+    return `${input.productName} (${input.pieces} шт)`;
+  }
+
+  return input.productName;
+}
+
+type CalculatorItem = z.infer<typeof OrderSchema>["items"][number];
+
+async function calculateOrderDraft(input: {
+  type: "delivery" | "pickup";
+  customer_phone?: string;
+  promo_code?: string;
+  delivery_zone_id?: string;
+  items: CalculatorItem[];
+}) {
+  let subtotal = 0;
+  const resolvedItems: Array<{
+    product_id: string;
+    product_variant_id?: string;
+    mode?: "full" | "v1" | "v2";
+    product_name_snapshot: string;
+    variant_name_snapshot?: string;
+    stripe_line_name: string;
+    unit_price: number;
+    quantity: number;
+    line_total: number;
+    selections: Array<{
+      option_item_id: string;
+      option_group_name_snapshot: string;
+      option_item_name_snapshot: string;
+      price_delta: number;
+      quantity: number;
+    }>;
+  }> = [];
+
+  for (const item of input.items) {
+    const product = await prisma.product.findUnique({
+      where: { id: item.product_id },
+      select: {
+        id: true,
+        name_ru: true,
+        is_active: true,
+        is_available: true,
+        base_price: true,
+        pieces_total: true,
+        variant1_pieces: true,
+        variant1_price: true,
+        variant2_pieces: true,
+        variant2_price: true,
+        variants: true,
+        option_links: { include: { option_group: { include: { items: true } } } },
+      },
+    });
+
+    if (!product || !product.is_active) {
+      return { ok: false as const, status: 422, message: `Товар не найден: ${item.product_id}` };
+    }
+    if (!product.is_available) {
+      return { ok: false as const, status: 422, message: `Товар недоступен: ${product.name_ru}` };
+    }
+
+    let unitPrice = parseFloat(product.base_price.toString());
+    let variantName: string | undefined;
+    const mode = item.mode ?? "full";
+
+    if (!item.product_variant_id && mode === "v1") {
+      if (!product.variant1_price) {
+        return { ok: false as const, status: 422, message: `Вариант v1 недоступен для товара: ${product.name_ru}` };
+      }
+      unitPrice = parseFloat(product.variant1_price.toString());
+      variantName = product.variant1_pieces ? `${product.variant1_pieces} шт` : "v1";
+    }
+
+    if (!item.product_variant_id && mode === "v2") {
+      if (!product.variant2_price) {
+        return { ok: false as const, status: 422, message: `Вариант v2 недоступен для товара: ${product.name_ru}` };
+      }
+      unitPrice = parseFloat(product.variant2_price.toString());
+      variantName = product.variant2_pieces ? `${product.variant2_pieces} шт` : "v2";
+    }
+
+    if (item.product_variant_id) {
+      const variant = product.variants.find((v) => v.id === item.product_variant_id);
+      if (!variant) return { ok: false as const, status: 422, message: "Вариант не найден" };
+      unitPrice = parseFloat(variant.price.toString());
+      variantName = variant.name_ru;
+    }
+
+    const resolvedSelections: typeof resolvedItems[0]["selections"] = [];
+    for (const sel of item.selections) {
+      let optionItem = null;
+      let groupName = "";
+      for (const link of product.option_links) {
+        const found = link.option_group.items.find((i) => i.id === sel.option_item_id);
+        if (found) {
+          optionItem = found;
+          groupName = link.option_group.name_ru;
+          break;
+        }
+      }
+      if (!optionItem) return { ok: false as const, status: 422, message: `Опция не найдена: ${sel.option_item_id}` };
+      const delta = parseFloat(optionItem.price_delta.toString());
+      unitPrice += delta;
+      resolvedSelections.push({
+        option_item_id: sel.option_item_id,
+        option_group_name_snapshot: groupName,
+        option_item_name_snapshot: optionItem.name_ru,
+        price_delta: delta,
+        quantity: sel.quantity,
+      });
+    }
+
+    const lineTotal = unitPrice * item.quantity;
+    subtotal += lineTotal;
+    resolvedItems.push({
+      product_id: item.product_id,
+      product_variant_id: item.product_variant_id,
+      mode,
+      product_name_snapshot: product.name_ru,
+      variant_name_snapshot: variantName,
+      stripe_line_name: buildLineItemDisplayName({
+        productName: product.name_ru,
+        variantName,
+        pieces:
+          mode === "v1"
+            ? product.variant1_pieces
+            : mode === "v2"
+              ? product.variant2_pieces
+              : product.pieces_total,
+      }),
+      unit_price: unitPrice,
+      quantity: item.quantity,
+      line_total: lineTotal,
+      selections: resolvedSelections,
+    });
+  }
+
+  let deliveryFee = 0;
+  let zoneId: string | undefined;
+  if (input.type === "delivery" && input.delivery_zone_id) {
+    const zone = await prisma.deliveryZone.findUnique({ where: { id: input.delivery_zone_id } });
+    if (!zone || !zone.is_active) return { ok: false as const, status: 422, message: "Зона доставки не найдена" };
+
+    if (subtotal < parseFloat(zone.min_order_amount.toString())) {
+      return { ok: false as const, status: 422, message: `Минимальная сумма заказа: ${zone.min_order_amount} EUR` };
+    }
+
+    deliveryFee = parseFloat(zone.delivery_fee.toString());
+    if (zone.free_delivery_from && subtotal >= parseFloat(zone.free_delivery_from.toString())) {
+      deliveryFee = 0;
+    }
+    zoneId = zone.id;
+  }
+
+  let discountAmount = 0;
+  let promoCodeId: string | undefined;
+  let promoCodeValue: string | undefined;
+  if (input.promo_code) {
+    const promo = await prisma.promoCode.findFirst({
+      where: {
+        code: input.promo_code.toUpperCase(),
+        is_active: true,
+        OR: [{ valid_from: null }, { valid_from: { lte: new Date() } }],
+        AND: [{ OR: [{ valid_to: null }, { valid_to: { gte: new Date() } }] }],
+      },
+    });
+
+    if (!promo) return { ok: false as const, status: 422, message: "Промокод неверный или истёк" };
+
+    if (promo.usage_limit_total) {
+      const totalUsage = await prisma.promoCodeUsage.count({ where: { promo_code_id: promo.id } });
+      if (totalUsage >= promo.usage_limit_total) {
+        return { ok: false as const, status: 422, message: "Промокод больше не может использоваться" };
+      }
+    }
+
+    if (input.customer_phone && promo.usage_limit_per_phone) {
+      const phoneUsage = await prisma.promoCodeUsage.count({
+        where: {
+          promo_code_id: promo.id,
+          phone: input.customer_phone,
+        },
+      });
+      if (phoneUsage >= promo.usage_limit_per_phone) {
+        return { ok: false as const, status: 422, message: "Вы уже использовали этот промокод максимальное количество раз" };
+      }
+    }
+
+    if (promo.min_order_amount && subtotal < parseFloat(promo.min_order_amount.toString())) {
+      return { ok: false as const, status: 422, message: `Минимальная сумма для промокода: ${promo.min_order_amount} EUR` };
+    }
+
+    discountAmount = promo.discount_type === "percent"
+      ? (subtotal * parseFloat(promo.discount_value.toString())) / 100
+      : parseFloat(promo.discount_value.toString());
+    if (promo.max_discount_amount) {
+      discountAmount = Math.min(discountAmount, parseFloat(promo.max_discount_amount.toString()));
+    }
+
+    promoCodeId = promo.id;
+    promoCodeValue = promo.code;
+  }
+
+  const totalAmount = Math.max(0, subtotal + deliveryFee - discountAmount);
+
+  return {
+    ok: true as const,
+    subtotal,
+    deliveryFee,
+    discountAmount,
+    totalAmount,
+    zoneId,
+    promoCodeId,
+    promoCodeValue,
+    resolvedItems,
+  };
+}
+
 export default async function publicOrdersRoutes(app: FastifyInstance) {
+  // POST /api/orders/quote
+  // Returns authoritative server-side pricing/validation for checkout UI.
+  app.post("/orders/quote", async (req, reply) => {
+    const parsed = OrderQuoteSchema.safeParse(req.body);
+    if (!parsed.success) return err(reply, parsed.error.message, 422);
+
+    const quote = parsed.data;
+    if (quote.type === "delivery" && !quote.address_line) {
+      return err(reply, "Адрес доставки обязателен", 422);
+    }
+
+    const calc = await calculateOrderDraft({
+      type: quote.type,
+      customer_phone: quote.customer_phone,
+      promo_code: quote.promo_code,
+      delivery_zone_id: quote.delivery_zone_id,
+      items: quote.items,
+    });
+
+    if (!calc.ok) return err(reply, calc.message, calc.status);
+
+    if (quote.payment_method === "stripe" && calc.totalAmount <= 0) {
+      return err(reply, "Онлайн-оплата недоступна для заказа с нулевой суммой", 422);
+    }
+
+    return ok(reply, {
+      items: calc.resolvedItems.map((item) => ({
+        product_id: item.product_id,
+        product_variant_id: item.product_variant_id,
+        mode: item.mode ?? "full",
+        name: item.stripe_line_name,
+        unit_price: item.unit_price,
+        quantity: item.quantity,
+        line_total: item.line_total,
+      })),
+      subtotal: calc.subtotal,
+      delivery_fee: calc.deliveryFee,
+      discount_amount: calc.discountAmount,
+      total_amount: calc.totalAmount,
+      promo_code: calc.promoCodeValue,
+    });
+  });
+
   // POST /api/orders
   app.post("/orders", async (req, reply) => {
     const parsed = OrderSchema.safeParse(req.body);
@@ -100,163 +393,22 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
       return err(reply, "Адрес доставки обязателен", 422);
     }
 
-    // Resolve items
-    let subtotal = 0;
-    const resolvedItems: Array<{
-      product_id: string;
-      product_variant_id?: string;
-      product_name_snapshot: string;
-      variant_name_snapshot?: string;
-      unit_price: number;
-      quantity: number;
-      line_total: number;
-      selections: Array<{
-        option_item_id: string;
-        option_group_name_snapshot: string;
-        option_item_name_snapshot: string;
-        price_delta: number;
-        quantity: number;
-      }>;
-    }> = [];
+    const calc = await calculateOrderDraft({
+      type: body.type,
+      customer_phone: body.customer_phone,
+      promo_code: body.promo_code,
+      delivery_zone_id: body.delivery_zone_id,
+      items: body.items,
+    });
+    if (!calc.ok) return err(reply, calc.message, calc.status);
 
-    for (const item of body.items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.product_id },
-        select: {
-          id: true,
-          name_ru: true,
-          is_active: true,
-          is_available: true,
-          base_price: true,
-          variants: true,
-          option_links: { include: { option_group: { include: { items: true } } } },
-        },
-      });
-      if (!product || !product.is_active) return err(reply, `Товар не найден: ${item.product_id}`, 422);
-      if (!product.is_available) return err(reply, `Товар недоступен: ${product.name_ru}`, 422);
-
-      let unitPrice = parseFloat(product.base_price.toString());
-      let variantName: string | undefined;
-
-      if (item.product_variant_id) {
-        const variant = product.variants.find((v) => v.id === item.product_variant_id);
-        if (!variant) return err(reply, `Вариант не найден`, 422);
-        unitPrice = parseFloat(variant.price.toString());
-        variantName = variant.name_ru;
-      }
-
-      // Resolve selections
-      const resolvedSelections: typeof resolvedItems[0]["selections"] = [];
-      for (const sel of item.selections) {
-        let optionItem = null;
-        let groupName = "";
-        for (const link of product.option_links) {
-          const found = link.option_group.items.find((i) => i.id === sel.option_item_id);
-          if (found) {
-            optionItem = found;
-            groupName = link.option_group.name_ru;
-            break;
-          }
-        }
-        if (!optionItem) return err(reply, `Опция не найдена: ${sel.option_item_id}`, 422);
-        const delta = parseFloat(optionItem.price_delta.toString());
-        unitPrice += delta;
-        resolvedSelections.push({
-          option_item_id: sel.option_item_id,
-          option_group_name_snapshot: groupName,
-          option_item_name_snapshot: optionItem.name_ru,
-          price_delta: delta,
-          quantity: sel.quantity,
-        });
-      }
-
-      const lineTotal = unitPrice * item.quantity;
-      subtotal += lineTotal;
-      resolvedItems.push({
-        product_id: item.product_id,
-        product_variant_id: item.product_variant_id,
-        product_name_snapshot: product.name_ru,
-        variant_name_snapshot: variantName,
-        unit_price: unitPrice,
-        quantity: item.quantity,
-        line_total: lineTotal,
-        selections: resolvedSelections,
-      });
-    }
-
-    // Delivery fee
-    let deliveryFee = 0;
-    let zoneId: string | undefined;
-    if (body.type === "delivery" && body.delivery_zone_id) {
-      const zone = await prisma.deliveryZone.findUnique({ where: { id: body.delivery_zone_id } });
-      if (!zone || !zone.is_active) return err(reply, "Зона доставки не найдена", 422);
-      
-      // ✅ Check minimum order amount for delivery zone
-      if (subtotal < parseFloat(zone.min_order_amount.toString())) {
-        return err(reply, `Минимальная сумма заказа: ${zone.min_order_amount} EUR`, 422);
-      }
-      
-      deliveryFee = parseFloat(zone.delivery_fee.toString());
-      if (zone.free_delivery_from && subtotal >= parseFloat(zone.free_delivery_from.toString())) {
-        deliveryFee = 0;
-      }
-      zoneId = zone.id;
-    }
-
-    // Promo code
-    let discountAmount = 0;
-    let promoCodeId: string | undefined;
-    if (body.promo_code) {
-      const promo = await prisma.promoCode.findFirst({
-        where: {
-          code: body.promo_code.toUpperCase(),
-          is_active: true,
-          OR: [{ valid_from: null }, { valid_from: { lte: new Date() } }],
-          AND: [{ OR: [{ valid_to: null }, { valid_to: { gte: new Date() } }] }],
-        },
-      });
-      
-      if (!promo) {
-        return err(reply, "Промокод неверный или истёк", 422);
-      }
-      
-      // ✅ Check usage limits
-      if (promo.usage_limit_total) {
-        const totalUsage = await prisma.promoCodeUsage.count({
-          where: { promo_code_id: promo.id },
-        });
-        if (totalUsage >= promo.usage_limit_total) {
-          return err(reply, "Промокод больше не может использоваться", 422);
-        }
-      }
-      
-      if (promo.usage_limit_per_phone) {
-        const phoneUsage = await prisma.promoCodeUsage.count({
-          where: {
-            promo_code_id: promo.id,
-            phone: body.customer_phone,
-          },
-        });
-        if (phoneUsage >= promo.usage_limit_per_phone) {
-          return err(reply, "Вы уже использовали этот промокод максимальное количество раз", 422);
-        }
-      }
-      
-      // ✅ Check minimum order amount for promo
-      if (promo.min_order_amount && subtotal < parseFloat(promo.min_order_amount.toString())) {
-        return err(reply, `Минимальная сумма для промокода: ${promo.min_order_amount} EUR`, 422);
-      }
-      
-      discountAmount = promo.discount_type === "percent"
-        ? (subtotal * parseFloat(promo.discount_value.toString())) / 100
-        : parseFloat(promo.discount_value.toString());
-      if (promo.max_discount_amount) {
-        discountAmount = Math.min(discountAmount, parseFloat(promo.max_discount_amount.toString()));
-      }
-      promoCodeId = promo.id;
-    }
-
-    const totalAmount = Math.max(0, subtotal + deliveryFee - discountAmount);
+    const subtotal = calc.subtotal;
+    const deliveryFee = calc.deliveryFee;
+    const discountAmount = calc.discountAmount;
+    const totalAmount = calc.totalAmount;
+    const zoneId = calc.zoneId;
+    const promoCodeId = calc.promoCodeId;
+    const resolvedItems = calc.resolvedItems;
 
     // Stripe Checkout does not support zero-amount payment sessions.
     // Force such orders to use a non-Stripe payment method instead of creating a broken flow.
@@ -443,10 +595,37 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
           price_data: {
             currency: "eur",
             unit_amount: Math.round(item.unit_price * 100),
-            product_data: { name: item.product_name_snapshot },
+            product_data: { name: item.stripe_line_name },
           },
           quantity: item.quantity,
         }));
+
+      req.log.info(
+        {
+          orderId: order.id,
+          cartItems: body.items.map((i) => ({
+            product_id: i.product_id,
+            product_variant_id: i.product_variant_id ?? null,
+            mode: i.mode ?? "full",
+            quantity: i.quantity,
+          })),
+          resolvedItems: resolvedItems.map((i) => ({
+            product_id: i.product_id,
+            product_variant_id: i.product_variant_id ?? null,
+            mode: i.mode ?? "full",
+            line_name: i.stripe_line_name,
+            unit_price: i.unit_price,
+            quantity: i.quantity,
+            line_total: i.line_total,
+          })),
+          stripeLineItems: stripeLineItems.map((i) => ({
+            name: i.price_data && "product_data" in i.price_data ? i.price_data.product_data?.name : null,
+            unit_amount: i.price_data && "unit_amount" in i.price_data ? i.price_data.unit_amount : null,
+            quantity: i.quantity,
+          })),
+        },
+        "Stripe checkout calculation debug"
+      );
 
       if (deliveryFee > 0) {
         stripeLineItems.push({

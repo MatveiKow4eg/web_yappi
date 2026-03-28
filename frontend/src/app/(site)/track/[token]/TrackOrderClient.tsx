@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AppApi, type Order } from "@/lib/api-client";
+import { useCart } from "@/lib/cart-context";
 
 const CART_STORAGE_KEY = "yappi_cart";
 const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
@@ -94,6 +95,7 @@ export default function TrackOrderClient({
 }: {
   token: string;
 }) {
+  const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const clearedRef = useRef(false);
@@ -136,9 +138,10 @@ export default function TrackOrderClient({
   useEffect(() => {
     if (!order || order.payment_status !== "paid" || clearedRef.current) return;
     clearedRef.current = true;
+    clearCart();
     localStorage.removeItem(CART_STORAGE_KEY);
     sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
-  }, [order]);
+  }, [order, clearCart]);
 
   if (loading) {
     return (

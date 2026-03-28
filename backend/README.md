@@ -85,7 +85,7 @@ server {
 - `GET /api/banners`
 - `POST /api/orders`
 - `GET /api/orders/track/:token`
-- `POST /api/promo-codes/validate`
+
 
 ### Admin (требует cookie `admin_token`)
 - `POST /api/admin/auth/login`

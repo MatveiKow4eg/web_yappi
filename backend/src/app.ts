@@ -8,7 +8,6 @@ import publicCategoriesRoutes from "./routes/public/categories";
 import publicProductsRoutes from "./routes/public/products";
 import publicBannersRoutes from "./routes/public/banners";
 import publicOrdersRoutes from "./routes/public/orders";
-import publicPromoRoutes from "./routes/public/promo";
 import stripeWebhookRoutes from "./routes/public/stripe";
 import adminAuthRoutes from "./routes/admin/auth";
 import adminMeRoutes from "./routes/admin/me";
@@ -65,7 +64,6 @@ const start = async () => {
   app.register(publicProductsRoutes, { prefix: "/api" });
   app.register(publicBannersRoutes, { prefix: "/api" });
   app.register(publicOrdersRoutes, { prefix: "/api" });
-  app.register(publicPromoRoutes, { prefix: "/api" });
   app.register(stripeWebhookRoutes, { prefix: "/api" });
 
   // ─── ADMIN ROUTES ───────────────────────────────────────────

@@ -588,8 +588,7 @@ GET /api/categories
 GET /api/products
 GET /api/products/:slug
 GET /api/banners
-POST /api/cart/validate
-POST /api/promo-codes/validate
+POST /api/orders/quote
 POST /api/orders
 GET /api/orders/track/:token
 POST /api/payments/stripe/create-intent
