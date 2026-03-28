@@ -3,6 +3,7 @@ import AdminSidebar from "@/components/ui/AdminSidebar";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import OrderStatusForm from "./OrderStatusForm";
+import DeleteOrderButton from "./DeleteOrderButton";
 
 export const metadata: Metadata = { title: "Заказ — Админка" };
 
@@ -144,8 +145,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
               </p>
               <OrderStatusForm orderId={order.id} currentStatus={order.status} />
 
-              {/* Status timeline */}
-              <div className="mt-6 space-y-2 text-xs">
+              {/* Status timeline */}              <div className="mt-6 space-y-2 text-xs">
                 {[
                   { key: "confirmed_at", label: "Подтверждён", value: order.confirmed_at },
                   { key: "ready_at", label: "Готов", value: order.ready_at },
@@ -161,6 +161,8 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                     </div>
                   ))}
               </div>
+
+              <DeleteOrderButton orderId={order.id} orderNumber={order.order_number} />
             </div>
           </div>
         </div>

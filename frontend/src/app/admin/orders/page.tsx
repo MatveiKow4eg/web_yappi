@@ -32,11 +32,14 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 interface Props {
-  searchParams: { status?: string; page?: string };
+  searchParams: { status?: string; page?: string; date?: string };
 }
+
+const DAY_NAMES = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"];
 
 export default async function AdminOrdersPage({ searchParams }: Props) {
   const status = searchParams.status;
+  const date = searchParams.date;
   const page = Math.max(1, parseInt(searchParams.page ?? "1"));
   const limit = 25;
 
@@ -45,7 +48,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const { totalOrders, todayOrders, pendingOrders } = stats || statsFallback;
 
   const res = await AdminApi.orders
-    .list({ status, page, limit })
+    .list({ status, page, limit, ...(date ? { date } : {}) })
     .catch(() => ({ orders: [], total: 0, page: 1, limit }));
   const { orders = [], total = 0 } = res as any;
 
@@ -66,11 +69,26 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       <AdminSidebar active="/admin/orders" />
       <main className="flex-1 p-8 overflow-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-black text-white">Заказы</h1>
+          <div className="flex items-center gap-3">
+            {date && (
+              <Link href="/admin/orders" className="text-brand-text-muted hover:text-white text-sm transition-colors">
+                ← Смены
+              </Link>
+            )}
+            <h1 className="text-2xl font-black text-white">
+              {date
+                ? (() => {
+                    const d = new Date(date + "T12:00:00Z");
+                    return `${DAY_NAMES[d.getUTCDay()]}, ${d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}`;
+                  })()
+                : "Заказы"}
+            </h1>
+          </div>
           <span className="text-brand-text-muted text-sm">{total} заказов</span>
         </div>
 
-        {/* Stats */}
+        {/* Stats — only when not filtering by date */}
+        {!date && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           {[
             { label: "Всего заказов", value: totalOrders, icon: "📦" },
@@ -86,22 +104,29 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             </div>
           ))}
         </div>
+        )}
 
         {/* Status filter tabs */}
         <div className="flex gap-2 flex-wrap mb-6">
-          {statusFilters.map((f) => (
-            <Link
-              key={f.value}
-              href={f.value ? `/admin/orders?status=${f.value}` : "/admin/orders"}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                (status ?? "") === f.value
-                  ? "bg-brand-red text-white"
-                  : "bg-brand-gray-mid text-brand-text-muted hover:text-white"
-              }`}
-            >
-              {f.label}
-            </Link>
-          ))}
+          {statusFilters.map((f) => {
+            const params = new URLSearchParams();
+            if (f.value) params.set("status", f.value);
+            if (date) params.set("date", date);
+            const href = params.toString() ? `/admin/orders?${params.toString()}` : "/admin/orders";
+            return (
+              <Link
+                key={f.value}
+                href={href}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  (status ?? "") === f.value
+                    ? "bg-brand-red text-white"
+                    : "bg-brand-gray-mid text-brand-text-muted hover:text-white"
+                }`}
+              >
+                {f.label}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Table */}
@@ -176,7 +201,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               <div className="flex gap-2">
                 {page > 1 && (
                   <Link
-                    href={`/admin/orders?page=${page - 1}${status ? `&status=${status}` : ""}`}
+                    href={`/admin/orders?page=${page - 1}${status ? `&status=${status}` : ""}${date ? `&date=${date}` : ""}`}
                     className="btn-secondary px-3 py-1 text-xs"
                   >
                     ← Назад
@@ -184,7 +209,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                 )}
                 {page < totalPages && (
                   <Link
-                    href={`/admin/orders?page=${page + 1}${status ? `&status=${status}` : ""}`}
+                    href={`/admin/orders?page=${page + 1}${status ? `&status=${status}` : ""}${date ? `&date=${date}` : ""}`}
                     className="btn-secondary px-3 py-1 text-xs"
                   >
                     Вперёд →

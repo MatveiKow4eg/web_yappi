@@ -44,6 +44,10 @@ export const AdminApi = {
     fetchServer<{ totalOrders: number; todayOrders: number; pendingOrders: number }>(
       "/api/admin/stats"
     ),
+  shifts: () =>
+    fetchServer<Array<{ date: string; count: number; total: number }>>(
+      "/api/admin/shifts"
+    ),
   orders: {
     list: (params: Record<string, any> = {}) => {
       const qs = new URLSearchParams();

@@ -37,15 +37,41 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
     return ok(reply, { totalOrders, todayOrders, pendingOrders });
   });
 
+  // GET /api/admin/shifts
+  app.get("/shifts", async (req, reply) => {
+    const session = await getAdminSession(req);
+    if (!requireAdminSession(session, reply)) return;
+    if (!requireRoles(session, reply, ["admin"])) return;
+
+    const rows = await prisma.$queryRaw<Array<{ date: Date; count: bigint; total: string }>>`
+      SELECT
+        DATE_TRUNC('day', created_at) AS date,
+        COUNT(*)::bigint              AS count,
+        SUM(total_amount)::numeric    AS total
+      FROM "Order"
+      GROUP BY DATE_TRUNC('day', created_at)
+      ORDER BY date DESC
+      LIMIT 90
+    `;
+
+    const shifts = rows.map((r) => ({
+      date: r.date.toISOString().slice(0, 10),
+      count: Number(r.count),
+      total: Number(r.total),
+    }));
+
+    return ok(reply, shifts);
+  });
+
   // GET /api/admin/orders
-  app.get<{ Querystring: { status?: string; statuses?: string; page?: string; limit?: string; created_after?: string } }>(
+  app.get<{ Querystring: { status?: string; statuses?: string; page?: string; limit?: string; created_after?: string; date?: string } }>(
     "/orders",
     async (req, reply) => {
       const session = await getAdminSession(req);
       if (!requireAdminSession(session, reply)) return;
       if (!requireRoles(session, reply, ["admin", "kitchen"])) return;
 
-      const { status, statuses, page = "1", limit = "20", created_after } = req.query;
+      const { status, statuses, page = "1", limit = "20", created_after, date } = req.query;
       const parsedPage = Number.parseInt(page, 10);
       const parsedLimit = Number.parseInt(limit, 10);
       const skip = (parsedPage - 1) * parsedLimit;
@@ -72,6 +98,12 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
             statusFilter = { ...statusFilter, created_at: { gte: since } };
           }
         }
+      }
+
+      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date) && session.role === "admin") {
+        const dayStart = new Date(`${date}T00:00:00.000Z`);
+        const dayEnd = new Date(`${date}T23:59:59.999Z`);
+        statusFilter = { ...statusFilter, created_at: { gte: dayStart, lte: dayEnd } };
       }
 
       const [orders, total] = await Promise.all([
