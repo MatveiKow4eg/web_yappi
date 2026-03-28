@@ -130,16 +130,18 @@ export interface AdminAuthResponse {
 
 export async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
+  const hasBody = options?.body !== undefined;
+  const headers = {
+    ...(options?.headers || {}),
+    ...(hasBody ? { "Content-Type": "application/json" } : {}),
+  };
   
   const res = await fetch(url, {
     ...options,
     // Prevent stale static caching in Next.js server components for storefront data.
     cache: options?.cache ?? "no-store",
     credentials: 'include', // 🍪 Automatically send cookies with every request
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
+    headers,
   });
 
   if (!res.ok) {
