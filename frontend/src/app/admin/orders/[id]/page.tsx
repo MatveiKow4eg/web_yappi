@@ -55,7 +55,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                 {[
                   { label: "Тип", value: order.type === "delivery" ? "🚚 Доставка" : "🏪 Самовывоз" },
                   { label: "Оплата", value: PAYMENT_LABELS[order.payment_method] ?? order.payment_method },
-                  { label: "Статус оплаты", value: order.payment_status },
+                  ...(order.payment_method === "stripe" ? [{ label: "Статус оплаты", value: order.payment_status === "paid" ? "✅ Оплачено" : "⏳ Не оплачено" }] : []),
                   { label: "Клиент", value: order.customer_name },
                   { label: "Телефон", value: order.customer_phone },
                   { label: "Язык", value: (order.language_code ?? "ru").toUpperCase() },

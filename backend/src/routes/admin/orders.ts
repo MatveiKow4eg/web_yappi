@@ -106,9 +106,15 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
         statusFilter = { ...statusFilter, created_at: { gte: dayStart, lte: dayEnd } };
       }
 
+      // Exclude unpaid Stripe orders from all views
+      const paidFilter = {
+        ...statusFilter,
+        NOT: { payment_method: "stripe", payment_status: { not: "paid" } },
+      };
+
       const [orders, total] = await Promise.all([
         prisma.order.findMany({
-          where: statusFilter,
+          where: paidFilter,
           orderBy: { created_at: "desc" },
           skip,
           ...(parsedLimit > 0 ? { take: parsedLimit } : {}),
@@ -118,7 +124,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
             delivery_zone: true,
           },
         }),
-        prisma.order.count({ where: statusFilter }),
+        prisma.order.count({ where: paidFilter }),
       ]);
 
       return ok(reply, { orders, total, page: parsedPage, limit: parsedLimit });

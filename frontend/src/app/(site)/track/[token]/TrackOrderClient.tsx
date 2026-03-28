@@ -8,11 +8,7 @@ const CART_STORAGE_KEY = "yappi_cart";
 const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  pending: "⏳ Ожидание",
   paid: "✅ Оплачено",
-  failed: "❌ Не оплачено",
-  refunded: "↩️ Возврат",
-  unpaid: "⏳ Не оплачено",
 };
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   stripe: "Интернет-платеж",
@@ -270,7 +266,7 @@ export default function TrackOrderClient({ token }: { token: string }) {
           <div>
             <p className="text-brand-text-muted mb-1">Статус оплаты</p>
             <p className="text-white font-medium">
-              {PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status}
+              {order.payment_status === "paid" ? "✅ Оплачено" : "⏳ Ожидает оплаты"}
             </p>
           </div>
           <div>
