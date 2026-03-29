@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const PREP_PRESETS = [10, 20, 30, 40, 50, 60, 70, 80, 90];
 
 interface Props {
   orderId: string;
@@ -11,6 +12,7 @@ interface Props {
   paymentMethod: string;
   defaultPrepMinutes: number;
   onUpdate: () => void;
+  onClose?: () => void;
 }
 
 export default function KitchenOrderActions({
@@ -20,6 +22,7 @@ export default function KitchenOrderActions({
   paymentMethod,
   defaultPrepMinutes,
   onUpdate,
+  onClose,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [showPrepInput, setShowPrepInput] = useState(false);
@@ -54,44 +57,82 @@ export default function KitchenOrderActions({
     }
   }
 
-  function handleAccept() {
-    const minutes = parseInt(prepMinutes, 10);
-    changeStatus("confirmed_preparing", { estimated_prep_minutes: minutes || defaultPrepMinutes });
+  async function handleAcceptWithTime(minutes: number) {
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/api/admin/orders/${orderId}/status`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "confirmed_preparing", estimated_prep_minutes: minutes }),
+      });
+      onUpdate();
+    } finally {
+      setLoading(false);
+    }
     setShowPrepInput(false);
   }
 
+  function handleManualAccept() {
+    const minutes = parseInt(prepMinutes, 10);
+    if (!minutes || minutes < 1) return;
+    handleAcceptWithTime(minutes);
+  }
+
+  async function handleComplete() {
+    await changeStatus("completed");
+    onClose?.();
+  }
+
   const canDelete = paymentMethod !== "stripe";
+  const isActive = ["confirmed_preparing", "ready", "sent"].includes(currentStatus);
 
   return (
-    <div className="space-y-2">
-      {/* Accept with prep time — new orders */}
+    <div className="space-y-3">
+      {/* new → показать кнопку Принять или пресеты времени */}
       {currentStatus === "new" && (
         <>
           {showPrepInput ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={prepMinutes}
-                onChange={(e) => setPrepMinutes(e.target.value)}
-                className="input w-20 py-1.5 text-sm text-center"
-                min={1}
-                max={240}
-              />
-              <span className="text-gray-900 text-xs shrink-0">мин</span>
-              <button
-                onClick={handleAccept}
-                disabled={loading}
-                className="btn-primary flex-1 text-sm py-2"
-              >
-                ✅ Принять
-              </button>
-              <button
-                onClick={() => setShowPrepInput(false)}
-                disabled={loading}
-                className="btn-secondary text-sm py-2 px-3"
-              >
-                ✕
-              </button>
+            <div className="space-y-3">
+              {/* Большие квадратики с временем */}
+              <div className="grid grid-cols-5 gap-2">
+                {PREP_PRESETS.map((min) => (
+                  <button
+                    key={min}
+                    onClick={() => handleAcceptWithTime(min)}
+                    disabled={loading}
+                    className="aspect-square flex items-center justify-center rounded-xl bg-white border-2 border-gray-300 text-gray-900 text-xl font-bold hover:bg-blue-600 hover:border-blue-600 hover:text-white active:scale-95 transition-all"
+                  >
+                    {min}
+                  </button>
+                ))}
+              </div>
+              {/* Ручной ввод */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={prepMinutes}
+                  onChange={(e) => setPrepMinutes(e.target.value)}
+                  className="input flex-1 py-2 text-sm text-center"
+                  min={1}
+                  max={240}
+                  placeholder="мин"
+                />
+                <button
+                  onClick={handleManualAccept}
+                  disabled={loading}
+                  className="btn-primary text-sm py-2 px-4"
+                >
+                  ОК
+                </button>
+                <button
+                  onClick={() => setShowPrepInput(false)}
+                  disabled={loading}
+                  className="btn-secondary text-sm py-2 px-3"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex gap-2">
@@ -100,7 +141,7 @@ export default function KitchenOrderActions({
                 disabled={loading}
                 className="btn-primary flex-1 text-sm py-2.5"
               >
-                ✅ Принять
+                Принять
               </button>
               <button
                 onClick={() => changeStatus("cancelled")}
@@ -114,81 +155,18 @@ export default function KitchenOrderActions({
         </>
       )}
 
-      {/* Confirmed → ready */}
-      {currentStatus === "confirmed_preparing" && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => changeStatus("ready")}
-            disabled={loading}
-            className="btn-primary flex-1 text-sm py-2.5"
-          >
-            🔔 Готово!
-          </button>
-          <button
-            onClick={() => changeStatus("cancelled")}
-            disabled={loading}
-            className="btn-secondary text-sm py-2.5 px-3"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Ready → sent (delivery) or completed (pickup) */}
-      {currentStatus === "ready" && orderType === "delivery" && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => changeStatus("sent")}
-            disabled={loading}
-            className="btn-primary flex-1 text-sm py-2.5"
-          >
-            🚚 Передать курьеру
-          </button>
-          <button
-            onClick={() => changeStatus("completed")}
-            disabled={loading}
-            className="btn-secondary text-sm py-2.5 px-3"
-          >
-            ✅
-          </button>
-        </div>
-      )}
-      {currentStatus === "ready" && orderType === "pickup" && (
+      {/* confirmed_preparing / ready / sent → Готово! (закрывает заказ) */}
+      {isActive && (
         <button
-          onClick={() => changeStatus("completed")}
+          onClick={handleComplete}
           disabled={loading}
           className="btn-primary w-full text-sm py-2.5"
         >
-          ✅ Выдан клиенту
+          🔔 Готово!
         </button>
       )}
 
-      {/* Sent → completed (pickup only — delivery is confirmed by customer) */}
-      {currentStatus === "sent" && orderType !== "delivery" && (
-        <button
-          onClick={() => changeStatus("completed")}
-          disabled={loading}
-          className="btn-primary w-full text-sm py-2.5"
-        >
-          ✅ Закрыть заказ
-        </button>
-      )}
-      {currentStatus === "sent" && orderType === "delivery" && (
-        <div className="space-y-2">
-          <div className="py-2 px-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-xs text-center">
-            Заказ передан курьеру. Ждём подтверждения клиента.
-          </div>
-          <button
-            onClick={() => changeStatus("completed")}
-            disabled={loading}
-            className="btn-secondary w-full text-sm py-2.5"
-          >
-            ✅ Закрыть заказ
-          </button>
-        </div>
-      )}
-
-      {/* Delete button — non-Stripe only */}
+      {/* Удалить — только не-Stripe */}
       {canDelete && (
         <button
           onClick={deleteOrder}

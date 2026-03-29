@@ -541,7 +541,7 @@ export default function KitchenPage() {
         </div>
       ) : (
         <>
-          <div className="px-4 md:px-6 pt-3 pb-2 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+          <div className="px-3 md:px-4 pt-3 pb-2 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
             <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="inline-flex min-w-max items-center overflow-hidden border border-gray-200 bg-white whitespace-nowrap">
               <button
@@ -593,7 +593,7 @@ export default function KitchenPage() {
                 <p className="text-gray-900">Активных заказов нет</p>
               </div>
             ) : selectedOrder ? (
-              <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} preparedItems={preparedByOrder[selectedOrder.id] ?? {}} onTogglePrepared={(itemId) => togglePrepared(selectedOrder.id, itemId)} />
+              <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} onClose={() => { setSelectedId(null); setAllowAutoSelect(false); }} preparedItems={preparedByOrder[selectedOrder.id] ?? {}} onTogglePrepared={(itemId) => togglePrepared(selectedOrder.id, itemId)} />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-900">
                 Выберите заказ из списка
@@ -728,12 +728,14 @@ function OrderDetail({
   order,
   session,
   onUpdate,
+  onClose,
   preparedItems,
   onTogglePrepared,
 }: {
   order: Order;
   session: KitchenState | null;
   onUpdate: () => void;
+  onClose: () => void;
   preparedItems: Record<string, boolean>;
   onTogglePrepared: (itemId: string) => void;
 }) {
@@ -949,6 +951,7 @@ function OrderDetail({
           paymentMethod={order.payment_method}
           defaultPrepMinutes={session?.kitchen_default_prep_minutes ?? 20}
           onUpdate={onUpdate}
+          onClose={onClose}
         />
       </div>
     </div>

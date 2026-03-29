@@ -116,8 +116,7 @@ export default function TrackOrderClient({ token }: { token: string }) {
   const isCancelled = ["cancelled", "payment_failed", "expired"].includes(order.status);
 
   const prepMinutes = order.estimated_prep_minutes;
-  const showEstimatedRow =
-    ["confirmed_preparing", "ready", "sent"].includes(order.status) && !!prepMinutes;
+  const showEstimatedRow = !!prepMinutes;
 
   // Row 1 — acceptance badge
   let acceptanceBadge: React.ReactNode;
