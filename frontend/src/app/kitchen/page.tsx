@@ -47,6 +47,27 @@ const PAYMENT_LABELS: Record<string, string> = {
   card_on_delivery: "Карта на доставке",
 };
 
+function OrderTypeIcon({ type }: { type: Order["type"] }) {
+  if (type === "delivery") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 7h11v8H3z" />
+        <path d="M14 10h3l3 3v2h-6z" />
+        <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor" stroke="none" />
+        <circle cx="17.5" cy="17.5" r="1.5" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 10.5 12 4l8 6.5" />
+      <path d="M6.5 9.5V20h11V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </svg>
+  );
+}
+
 export default function KitchenPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [session, setSession] = useState<KitchenState | null>(null);
@@ -512,11 +533,12 @@ export default function KitchenPage() {
                 {allOrders.map((order) => {
                   const isClosed = CLOSED_STATUSES.has(order.status);
                   const isNew = order.status === "new";
+                  const createdAt = new Date(order.created_at);
                   return (
                     <button
                       key={order.id}
                       onClick={() => setSelectedId(order.id)}
-                      className={`w-full text-left px-4 py-3.5 border-b border-white/5 transition-colors border-l-2 ${
+                      className={`w-full text-left px-4 py-3 border-b border-white/5 transition-colors border-l-2 ${
                         isClosed ? "opacity-45 hover:opacity-70" : "hover:bg-white/5"
                       } ${
                         isNew ? "bg-yellow-500/8" : ""
@@ -526,44 +548,53 @@ export default function KitchenPage() {
                           : "border-l-transparent"
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[order.status] ?? "bg-gray-400"} ${isNew ? "animate-pulse" : ""}`}
-                        />
-                        <span className={`font-mono font-bold text-sm ${isClosed ? "text-brand-text-muted" : "text-white"}`}>
-                          #{order.order_number}
-                        </span>
-                        <span className="ml-auto text-xs text-brand-text-muted">
-                          {new Date(order.created_at).toLocaleTimeString("ru-RU", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-brand-text-muted text-xs truncate">
-                          {order.type === "delivery" ? "🚚" : "🏪"} {order.customer_name}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-brand-text-muted text-xs">
-                          {order.items.length} поз. · {Number(order.total_amount).toFixed(2)} €
-                        </span>
-                        <span
-                          className={`text-xs font-semibold ${
-                            isClosed
-                              ? "text-gray-500"
-                              : order.status === "new"
-                                ? "text-yellow-400"
-                                : order.status === "confirmed_preparing"
-                                  ? "text-brand-red"
-                                  : order.status === "sent"
-                                    ? "text-blue-400"
-                                    : "text-green-400"
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                            order.type === "delivery"
+                              ? "bg-blue-500/20 text-blue-400"
+                              : "bg-white/10 text-brand-text-muted"
                           }`}
                         >
-                          {STATUS_LABELS[order.status]}
-                        </span>
+                          <OrderTypeIcon type={order.type} />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[order.status] ?? "bg-gray-400"} ${isNew ? "animate-pulse" : ""}`}
+                              />
+                              <span className={`font-mono font-bold text-[13px] truncate ${isClosed ? "text-brand-text-muted" : "text-white"}`}>
+                                #{order.order_number}
+                              </span>
+                            </div>
+                            <span className="text-right text-[10px] leading-tight text-brand-text-muted shrink-0">
+                              {createdAt.toLocaleDateString("ru-RU", {
+                                day: "2-digit",
+                                month: "2-digit",
+                              })}
+                              <br />
+                              {createdAt.toLocaleTimeString("ru-RU", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+
+                          <p className={`mb-1 text-[15px] font-semibold truncate ${isClosed ? "text-brand-text-muted" : "text-white"}`}>
+                            {order.customer_name}
+                          </p>
+
+                          <div className="flex items-center justify-between gap-3 text-[12px]">
+                            <span className="text-brand-text-muted">
+                              {order.items.length} поз.
+                            </span>
+                            <span className={`font-bold ${isClosed ? "text-brand-text-muted" : "text-white"}`}>
+                              {Number(order.total_amount).toFixed(2)} €
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </button>
                   );

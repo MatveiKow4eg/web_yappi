@@ -159,14 +159,6 @@ export default function CheckoutPage() {
   }, [stripeAvailable]);
 
   const requestQuote = useCallback(async (showErrors: boolean, promoCodeOverride?: string | null) => {
-    if (type === "delivery" && !address.trim()) {
-      setServerQuote(null);
-      if (showErrors) {
-        setError("Укажите адрес доставки");
-      }
-      return null;
-    }
-
     setQuoteLoading(true);
     if (showErrors) setError(null);
 
@@ -260,6 +252,11 @@ export default function CheckoutPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (loading) return;
+
+    if (type === "delivery" && !address.trim()) {
+      setError("Укажите адрес доставки");
+      return;
+    }
 
     setError(null);
     setStripeNotice(null);
@@ -446,22 +443,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-
-            {/* Payment */}
-            <div className="card p-6">
-              <h2 className="font-bold text-white mb-4">Способ оплаты</h2>
-              <div className="rounded-xl border border-brand-red/20 bg-brand-red/10 p-4">
-                <p className="text-sm font-semibold text-white">🌐 Только онлайн-оплата</p>
-                <p className="mt-1 text-sm text-brand-text-muted">
-                  Все заказы на сайте оплачиваются через платежную страницу Stripe.
-                </p>
-                {!stripeAvailable && (
-                  <p className="mt-3 text-sm text-brand-red">
-                    Онлайн-оплата временно недоступна. Оформление заказа отключено, пока не настроен Stripe.
-                  </p>
-                )}
-              </div>
-            </div>
 
             {/* Comment + promo */}
             <div className="card p-6">

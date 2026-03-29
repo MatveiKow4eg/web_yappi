@@ -346,10 +346,6 @@ export default async function publicOrdersRoutes(app: FastifyInstance) {
     if (!parsed.success) return err(reply, parsed.error.message, 422);
 
     const quote = parsed.data;
-    if (quote.type === "delivery" && !quote.address_line) {
-      return err(reply, "Адрес доставки обязателен", 422);
-    }
-
     const calc = await calculateOrderDraft({
       type: quote.type,
       customer_phone: quote.customer_phone,
