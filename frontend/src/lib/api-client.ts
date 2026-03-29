@@ -90,6 +90,7 @@ export interface Order {
     variant_name_snapshot?: string;
     product?: {
       image_url?: string | null;
+      pieces_total?: number | null;
     };
     quantity: number;
     line_total: number;

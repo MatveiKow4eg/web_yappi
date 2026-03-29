@@ -76,6 +76,13 @@ function extractProductCode(imageRef?: string | null): string | null {
   return match ? match[0] : null;
 }
 
+function extractPiecesCount(variantName?: string, defaultPieces?: number | null): number | null {
+  const variantMatch = (variantName ?? "").match(/(\d+)\s*шт/i);
+  if (variantMatch) return Number(variantMatch[1]);
+  if (typeof defaultPieces === "number" && defaultPieces > 0) return defaultPieces;
+  return null;
+}
+
 export default function KitchenPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [session, setSession] = useState<KitchenState | null>(null);
@@ -559,6 +566,7 @@ export default function KitchenPage() {
               <div className="flex flex-col flex-1">
                 {allOrders.map((order) => {
                   const isClosed = CLOSED_STATUSES.has(order.status);
+                  const isActive = !isClosed;
                   const isNew = order.status === "new";
                   const createdAt = new Date(order.created_at);
                   return (
@@ -568,7 +576,9 @@ export default function KitchenPage() {
                       className={`w-full text-left px-4 py-3 border-b border-white/5 transition-colors border-l-2 ${
                         isClosed ? "opacity-45 hover:opacity-70" : "hover:bg-white/5"
                       } ${
-                        isNew ? "bg-yellow-500/8" : ""
+                        isActive ? "bg-emerald-500/10" : ""
+                      } ${
+                        isNew ? "bg-yellow-500/12 ring-1 ring-yellow-400/30" : ""
                       } ${
                         selectedId === order.id
                           ? `bg-white/8 ${STATUS_LEFT_BORDER[order.status] ?? "border-l-white/20"}`
@@ -759,6 +769,7 @@ function OrderDetail({
           {order.items.map((item) => {
             const imageSrc = resolveProductImageSrc(item.product?.image_url);
             const productCode = extractProductCode(item.product?.image_url);
+            const piecesCount = extractPiecesCount(item.variant_name_snapshot, item.product?.pieces_total);
             const isPrepared = Boolean(preparedByItem[item.id]);
             return (
             <button
@@ -783,7 +794,7 @@ function OrderDetail({
 
                 <div className="min-w-0 flex-1">
                   <p className={`font-semibold truncate ${isPrepared ? "text-green-200" : "text-white"}`}>
-                    x{item.quantity} - {productCode ? `#${productCode} ` : ""}{item.product_name_snapshot}
+                    x{item.quantity} - {productCode ? `#${productCode} ` : ""}{item.product_name_snapshot} · {piecesCount ?? "?"}шт.
                   </p>
                 {item.variant_name_snapshot && (
                   <p className="text-brand-text-muted text-xs">{item.variant_name_snapshot}</p>
