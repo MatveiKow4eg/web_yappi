@@ -96,6 +96,7 @@ export default function KitchenPage() {
   const [openingDay, setOpeningDay] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [allowAutoSelect, setAllowAutoSelect] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyByDay, setHistoryByDay] = useState<Array<{ dayKey: string; dayLabel: string; orders: number; rolls: number; total: number }>>([]);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -111,6 +112,17 @@ export default function KitchenPage() {
       ...prev,
       [orderId]: { ...prev[orderId], [itemId]: !prev[orderId]?.[itemId] },
     }));
+  }
+
+  function handleOrderSelect(orderId: string) {
+    if (selectedId === orderId) {
+      setSelectedId(null);
+      setAllowAutoSelect(false);
+      return;
+    }
+
+    setSelectedId(orderId);
+    setAllowAutoSelect(true);
   }
 
   const fetchOrders = useCallback(async () => {
@@ -137,12 +149,13 @@ export default function KitchenPage() {
       setSelectedId((prev) => {
         if (prev) {
           const still = sorted.find((o: Order) => o.id === prev);
-          return still ? prev : (sorted[0]?.id ?? null);
+          if (still) return prev;
+          return allowAutoSelect ? (sorted[0]?.id ?? null) : null;
         }
-        return sorted[0]?.id ?? null;
+        return allowAutoSelect ? (sorted[0]?.id ?? null) : null;
       });
     } catch {}
-  }, []);
+  }, [allowAutoSelect]);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -581,7 +594,7 @@ export default function KitchenPage() {
                   return (
                     <button
                       key={order.id}
-                      onClick={() => setSelectedId(order.id)}
+                      onClick={() => handleOrderSelect(order.id)}
                       className={`w-full text-left px-4 py-3 border-b border-gray-200 border-l-2 transition-all duration-200 ${
                         isClosed ? "opacity-45 hover:opacity-70" : "hover:bg-gray-50"
                       } ${
