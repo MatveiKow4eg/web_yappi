@@ -113,10 +113,6 @@ export default function TrackOrderClient({ token }: { token: string }) {
   const isTerminal = TERMINAL_STATUSES.has(order.status);
   const isPending = order.status === "new";
   const isAccepted = ["confirmed_preparing", "ready", "sent", "completed"].includes(order.status);
-  const isCooking = order.status === "confirmed_preparing";
-  const isReady = ["ready", "sent", "completed"].includes(order.status);
-  const isSent = order.status === "sent";
-  const isCompleted = order.status === "completed";
   const isCancelled = ["cancelled", "payment_failed", "expired"].includes(order.status);
 
   const prepMinutes = order.estimated_prep_minutes;
@@ -148,31 +144,7 @@ export default function TrackOrderClient({ token }: { token: string }) {
     acceptanceBadge = <span className="badge-gray">{order.status}</span>;
   }
 
-  // Row 3 — readiness badge
-  let readinessBadge: React.ReactNode;
-  if (isCooking) {
-    readinessBadge = <span className="badge-green">Готовится</span>;
-  } else if (isReady) {
-    readinessBadge = <span className="badge-green">Готов ✓</span>;
-  } else if (isCancelled) {
-    readinessBadge = <span className="badge-red">Отменён</span>;
-  } else {
-    readinessBadge = <span className="badge-gray">Ожидает</span>;
-  }
-
-  // Row 4 — delivery badge
-  let deliveryBadge: React.ReactNode;
-  if (isSent) {
-    deliveryBadge = <span className="badge-green">В пути 🚚</span>;
-  } else if (isCompleted) {
-    deliveryBadge = <span className="badge-green">Доставлен ✓</span>;
-  } else if (isCancelled) {
-    deliveryBadge = <span className="badge-red">Отменено</span>;
-  } else {
-    deliveryBadge = <span className="badge-gray">Ожидание</span>;
-  }
-
-  const showConfirmButton = isSent && order.type === "delivery";
+  const showConfirmButton = order.status === "sent" && order.type === "delivery";
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
@@ -195,37 +167,19 @@ export default function TrackOrderClient({ token }: { token: string }) {
         <h2 className="font-bold text-white mb-4">Статус заказа</h2>
 
         {/* Row 1: Acceptance */}
-        <div className="flex items-center justify-between py-3 border-b border-white/5">
+        <div className={`flex items-center justify-between py-3 ${showEstimatedRow ? "border-b border-white/5" : ""}`}>
           <span className="text-sm text-brand-text-muted">Ожидание</span>
           {acceptanceBadge}
         </div>
 
         {/* Row 2: Estimated wait with colored dot */}
         {showEstimatedRow && (
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
+          <div className="flex items-center justify-between py-3">
             <span className="text-sm text-brand-text-muted">Примерное ожидание</span>
             <span className="flex items-center text-white text-sm font-medium">
               <TimeDot minutes={prepMinutes!} />
               {prepMinutes} мин
             </span>
-          </div>
-        )}
-
-        {/* Row 3: Readiness */}
-        <div
-          className={`flex items-center justify-between py-3 ${
-            order.type === "delivery" ? "border-b border-white/5" : ""
-          }`}
-        >
-          <span className="text-sm text-brand-text-muted">Готовность заказа</span>
-          {readinessBadge}
-        </div>
-
-        {/* Row 4: Delivery */}
-        {order.type === "delivery" && (
-          <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-brand-text-muted">Доставка</span>
-            {deliveryBadge}
           </div>
         )}
       </div>

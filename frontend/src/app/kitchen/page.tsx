@@ -726,15 +726,22 @@ function OrderDetail({
           <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3">
             Клиент
           </h3>
-          <p className="text-gray-900 font-semibold">{order.customer_name}</p>
-          <p className="text-gray-900 text-sm">{order.customer_phone}</p>
+          <p className="text-gray-900 text-sm">
+            <span className="font-bold">Имя:</span>{" "}
+            <span className="font-medium">{order.customer_name}</span>
+          </p>
+          <p className="text-gray-900 text-sm mt-1">
+            <span className="font-bold">Тел.:</span>{" "}
+            <span className="font-medium">{order.customer_phone}</span>
+          </p>
           {order.type === "delivery" && order.address_line && (
-            <p className="text-gray-900 text-sm mt-2">
-              📍 {order.address_line}
+            <p className="text-gray-900 text-sm mt-1">
+              <span className="font-bold">Адрес:</span>{" "}
+              <span className="font-medium">{order.address_line}
               {order.apartment ? `, кв. ${order.apartment}` : ""}
               {order.entrance ? `, подъезд ${order.entrance}` : ""}
               {order.floor ? `, этаж ${order.floor}` : ""}
-              {order.door_code ? `, код ${order.door_code}` : ""}
+              {order.door_code ? `, код ${order.door_code}` : ""}</span>
             </p>
           )}
         </div>
@@ -766,16 +773,16 @@ function OrderDetail({
             </span>
           </div>
           {order.estimated_ready_at && order.status === "confirmed_preparing" && (
-            <div className="mt-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-gray-900">
+            <div className="mt-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm text-gray-900">
               ⏱ Готов к:{" "}
-              <span className="text-gray-900 font-semibold">
+              <span className="text-gray-900 font-bold text-base">
                 {new Date(order.estimated_ready_at).toLocaleTimeString("ru-RU", {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </span>
               {order.estimated_prep_minutes && (
-                <span className="ml-1">({order.estimated_prep_minutes} мин)</span>
+                <span className="ml-1 text-sm font-medium">({order.estimated_prep_minutes} мин)</span>
               )}
             </div>
           )}
