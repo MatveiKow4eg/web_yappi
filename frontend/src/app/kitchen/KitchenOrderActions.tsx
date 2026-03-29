@@ -174,8 +174,17 @@ export default function KitchenOrderActions({
         </button>
       )}
       {currentStatus === "sent" && orderType === "delivery" && (
-        <div className="py-2 px-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs text-center">
-          Заказ передан курьеру. Ждём подтверждения клиента.
+        <div className="space-y-2">
+          <div className="py-2 px-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs text-center">
+            Заказ передан курьеру. Ждём подтверждения клиента.
+          </div>
+          <button
+            onClick={() => changeStatus("completed")}
+            disabled={loading}
+            className="btn-secondary w-full text-sm py-2.5"
+          >
+            ✅ Закрыть заказ
+          </button>
         </div>
       )}
 
