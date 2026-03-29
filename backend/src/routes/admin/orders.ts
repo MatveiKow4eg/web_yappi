@@ -100,7 +100,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
         }
       }
 
-      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date) && session.role === "admin") {
+      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date) && (session.role === "admin" || session.role === "kitchen")) {
         const dayStart = new Date(`${date}T00:00:00.000Z`);
         const dayEnd = new Date(`${date}T23:59:59.999Z`);
         statusFilter = { ...statusFilter, created_at: { gte: dayStart, lte: dayEnd } };

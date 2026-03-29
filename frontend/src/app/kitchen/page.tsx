@@ -34,6 +34,34 @@ const STATUS_LEFT_BORDER: Record<string, string> = {
 
 const CLOSED_STATUSES = new Set(["completed", "cancelled", "payment_failed", "expired"]);
 
+const HISTORY_DAYS = 30;
+
+function getTallinnDayKey(date: Date): string {
+  return date.toLocaleDateString("en-CA", {
+    timeZone: "Europe/Tallinn",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function buildRecentDayTabs(count: number): Array<{ dayKey: string; label: string }> {
+  const days: Array<{ dayKey: string; label: string }> = [];
+  for (let i = 0; i < count; i += 1) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push({
+      dayKey: getTallinnDayKey(d),
+      label: d.toLocaleDateString("ru-RU", {
+        timeZone: "Europe/Tallinn",
+        day: "2-digit",
+        month: "2-digit",
+      }),
+    });
+  }
+  return days;
+}
+
 function orderSortKey(o: Order): number {
   if (o.status === "new") return 0;
   if (["confirmed_preparing", "ready", "sent"].includes(o.status)) return 1;
@@ -97,6 +125,7 @@ export default function KitchenPage() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [allowAutoSelect, setAllowAutoSelect] = useState(true);
+  const [selectedHistoryDay, setSelectedHistoryDay] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyByDay, setHistoryByDay] = useState<Array<{ dayKey: string; dayLabel: string; orders: number; rolls: number; total: number }>>([]);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -131,7 +160,9 @@ export default function KitchenPage() {
         statuses: "new,confirmed_preparing,ready,sent,completed,cancelled",
         limit: 0,
       };
-      if (currentSession?.kitchen_day_started_at) {
+      if (selectedHistoryDay) {
+        params.date = selectedHistoryDay;
+      } else if (currentSession?.kitchen_day_started_at) {
         params.created_after = currentSession.kitchen_day_started_at;
       }
       const res = await AppApi.admin.orders.list(params);
@@ -154,7 +185,7 @@ export default function KitchenPage() {
         return allowAutoSelect ? (sorted[0]?.id ?? null) : null;
       });
     } catch {}
-  }, [allowAutoSelect]);
+  }, [allowAutoSelect, selectedHistoryDay]);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -300,6 +331,7 @@ export default function KitchenPage() {
 
   const allOrders = orders;
   const activeCount = orders.filter((o) => !CLOSED_STATUSES.has(o.status)).length;
+  const dayTabs = buildRecentDayTabs(HISTORY_DAYS);
 
   const selectedOrder = allOrders.find((o) => o.id === selectedId) ?? null;
 
@@ -508,8 +540,44 @@ export default function KitchenPage() {
           )}
         </div>
       ) : (
-        /* ── OPEN SHIFT: 2-column layout ──────────────────────────────── */
-        <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
+        <>
+          <div className="px-4 md:px-6 pt-3 pb-2 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+            <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+              <button
+                onClick={() => {
+                  setSelectedHistoryDay(null);
+                  setAllowAutoSelect(true);
+                }}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                  selectedHistoryDay === null
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                }`}
+              >
+                Сегодня
+              </button>
+
+              {dayTabs.map((tab) => (
+                <button
+                  key={tab.dayKey}
+                  onClick={() => {
+                    setSelectedHistoryDay(tab.dayKey);
+                    setAllowAutoSelect(true);
+                  }}
+                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                    selectedHistoryDay === tab.dayKey
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── OPEN SHIFT: 2-column layout ──────────────────────────────── */}
+          <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
           {/* LEFT — detail panel */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6">
             {loadingSession ? (
@@ -647,7 +715,8 @@ export default function KitchenPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
