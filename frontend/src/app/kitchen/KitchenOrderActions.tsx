@@ -26,7 +26,15 @@ export default function KitchenOrderActions({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [showPrepInput, setShowPrepInput] = useState(false);
+  const [gridBlocked, setGridBlocked] = useState(false);
   const [prepMinutes, setPrepMinutes] = useState(String(defaultPrepMinutes));
+  const [pendingMinutes, setPendingMinutes] = useState<number | null>(null);
+
+  function openGrid() {
+    setShowPrepInput(true);
+    setGridBlocked(true);
+    setTimeout(() => setGridBlocked(false), 450);
+  }
 
   async function changeStatus(status: string, extraBody?: Record<string, unknown>) {
     setLoading(true);
@@ -76,7 +84,7 @@ export default function KitchenOrderActions({
   function handleManualAccept() {
     const minutes = parseInt(prepMinutes, 10);
     if (!minutes || minutes < 1) return;
-    handleAcceptWithTime(minutes);
+    setPendingMinutes(minutes);
   }
 
   async function handleComplete() {
@@ -99,8 +107,8 @@ export default function KitchenOrderActions({
                 {PREP_PRESETS.map((min) => (
                   <button
                     key={min}
-                    onClick={() => handleAcceptWithTime(min)}
-                    disabled={loading}
+                    onClick={() => !gridBlocked && setPendingMinutes(min)}
+                    disabled={loading || gridBlocked}
                     className="aspect-square flex items-center justify-center rounded-xl bg-white border-2 border-gray-300 text-gray-900 text-xl font-bold hover:bg-blue-600 hover:border-blue-600 hover:text-white active:scale-95 transition-all"
                   >
                     {min}
@@ -137,7 +145,7 @@ export default function KitchenOrderActions({
           ) : (
             <div className="flex gap-2">
               <button
-                onClick={() => setShowPrepInput(true)}
+                onClick={openGrid}
                 disabled={loading}
                 className="btn-primary flex-1 text-sm py-2.5"
               >
@@ -175,6 +183,36 @@ export default function KitchenOrderActions({
         >
           Удалить заказ
         </button>
+      )}
+
+      {/* Модальное подтверждение времени */}
+      {pendingMinutes !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setPendingMinutes(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-6 min-w-[260px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-2xl font-black text-gray-900 text-center">
+              Время готовки — {pendingMinutes} мин
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => { setPendingMinutes(null); handleAcceptWithTime(pendingMinutes); }}
+                disabled={loading}
+                className="btn-primary flex-1 py-3 text-base"
+              >
+                Подтвердить
+              </button>
+              <button
+                onClick={() => setPendingMinutes(null)}
+                disabled={loading}
+                className="btn-secondary flex-1 py-3 text-base"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
