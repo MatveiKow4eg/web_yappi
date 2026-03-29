@@ -598,7 +598,7 @@ export default function KitchenPage() {
                       className={`w-full text-left px-4 py-3 border-b border-gray-200 border-l-2 transition-all duration-200 ${
                         isClosed ? "opacity-45 hover:opacity-70" : "hover:bg-gray-50"
                       } ${
-                        isActive ? "bg-emerald-50" : ""
+                        isActive ? "bg-emerald-200" : ""
                       } ${
                         isNew ? "bg-yellow-50 ring-1 ring-yellow-300" : ""
                       } ${
