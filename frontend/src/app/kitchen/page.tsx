@@ -96,6 +96,7 @@ export default function KitchenPage() {
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showShiftModal, setShowShiftModal] = useState(false);
+  const [showOrderDescription, setShowOrderDescription] = useState(true);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -483,34 +484,43 @@ export default function KitchenPage() {
         /* ── OPEN SHIFT: 2-column layout ──────────────────────────────── */
         <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
           {/* LEFT — detail panel */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            {loadingSession ? (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-brand-text-muted">Загрузка смены...</p>
-              </div>
-            ) : activeCount === 0 && allOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="text-5xl mb-4">✅</div>
-                <p className="text-white font-bold text-xl mb-1">Всё готово</p>
-                <p className="text-brand-text-muted">Активных заказов нет</p>
-              </div>
-            ) : selectedOrder ? (
-              <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} />
-            ) : (
-              <div className="flex items-center justify-center h-full text-brand-text-muted">
-                Выберите заказ из списка
-              </div>
-            )}
-          </div>
+          {showOrderDescription && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              {loadingSession ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-brand-text-muted">Загрузка смены...</p>
+                </div>
+              ) : activeCount === 0 && allOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="text-5xl mb-4">✅</div>
+                  <p className="text-white font-bold text-xl mb-1">Всё готово</p>
+                  <p className="text-brand-text-muted">Активных заказов нет</p>
+                </div>
+              ) : selectedOrder ? (
+                <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-brand-text-muted">
+                  Выберите заказ из списка
+                </div>
+              )}
+            </div>
+          )}
 
           {/* RIGHT — order list with gear icon */}
-          <div className="w-full md:w-96 shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col">
+          <div className={`w-full ${showOrderDescription ? "md:w-96" : "md:w-full"} shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col`}>
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
               <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest flex items-center gap-2">
                 Заказы
                 <span className="w-2 h-2 rounded-full bg-green-400" />
               </span>
               <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setShowOrderDescription((prev) => !prev)}
+                  className="text-xs text-brand-text-muted hover:text-white bg-white/10 hover:bg-white/15 px-2 py-0.5 rounded-full transition-colors"
+                  title={showOrderDescription ? "Скрыть описание заказа" : "Показать описание заказа"}
+                >
+                  {showOrderDescription ? "Скрыть" : "Показать"}
+                </button>
                 {activeCount > 0 && (
                   <span className="text-xs text-yellow-400 font-bold bg-yellow-400/10 px-2 py-0.5 rounded-full">
                     {activeCount} акт.
@@ -733,19 +743,9 @@ function OrderDetail({
 
       {/* Items */}
       <div className="card p-4 mb-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
-            Состав заказа
-          </h3>
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">
-              Готово: {preparedCount}
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-300">
-              Осталось: {remainingCount}
-            </span>
-          </div>
-        </div>
+        <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest mb-3">
+          Состав заказа
+        </h3>
         <div className="space-y-3">
           {order.items.map((item) => {
             const imageSrc = resolveProductImageSrc(item.product?.image_url);
