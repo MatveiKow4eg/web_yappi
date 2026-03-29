@@ -484,7 +484,7 @@ export default function KitchenPage() {
         /* ── OPEN SHIFT: 2-column layout ──────────────────────────────── */
         <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
           {/* LEFT — detail panel */}
-          <div className={`${showOrderDescription ? "flex-1" : "md:w-14 md:min-w-14"} overflow-y-auto p-4 md:p-6`}>
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="mb-3">
               <button
                 onClick={() => setShowOrderDescription((prev) => !prev)}
@@ -515,6 +515,10 @@ export default function KitchenPage() {
                   </div>
                 )}
               </>
+            )}
+
+            {!showOrderDescription && (
+              <div className="h-full" />
             )}
           </div>
 
