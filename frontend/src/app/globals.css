@@ -120,4 +120,17 @@
   .divider {
     @apply border-t border-white/5;
   }
+
+  /* Kitchen page — light theme context overrides */
+  .kitchen-light .card {
+    @apply bg-white rounded-2xl border border-gray-200 shadow-sm shadow-gray-100;
+  }
+
+  .kitchen-light .btn-secondary {
+    @apply bg-white hover:bg-gray-100 text-gray-700 border border-gray-300;
+  }
+
+  .kitchen-light .input {
+    @apply bg-white border border-gray-300 text-gray-900 placeholder:text-gray-400;
+  }
 }

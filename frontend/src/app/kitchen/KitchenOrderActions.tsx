@@ -77,7 +77,7 @@ export default function KitchenOrderActions({
                 min={1}
                 max={240}
               />
-              <span className="text-brand-text-muted text-xs shrink-0">мин</span>
+              <span className="text-gray-500 text-xs shrink-0">мин</span>
               <button
                 onClick={handleAccept}
                 disabled={loading}
@@ -175,7 +175,7 @@ export default function KitchenOrderActions({
       )}
       {currentStatus === "sent" && orderType === "delivery" && (
         <div className="space-y-2">
-          <div className="py-2 px-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs text-center">
+          <div className="py-2 px-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-xs text-center">
             Заказ передан курьеру. Ждём подтверждения клиента.
           </div>
           <button
@@ -193,7 +193,7 @@ export default function KitchenOrderActions({
         <button
           onClick={deleteOrder}
           disabled={loading}
-          className="w-full text-xs py-1.5 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="w-full text-xs py-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
         >
           Удалить заказ
         </button>
