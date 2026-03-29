@@ -576,13 +576,13 @@ export default function KitchenPage() {
                   const isClosed = CLOSED_STATUSES.has(order.status);
                   const isActive = !isClosed;
                   const isNew = order.status === "new";
-                    const isSelected = selectedId === order.id;
+                  const isSelected = selectedId === order.id;
                   const createdAt = new Date(order.created_at);
                   return (
                     <button
                       key={order.id}
                       onClick={() => setSelectedId(order.id)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-200 transition-colors border-l-2 ${
+                      className={`w-full text-left px-4 py-3 border-b border-gray-200 border-l-2 transition-all duration-200 ${
                         isClosed ? "opacity-45 hover:opacity-70" : "hover:bg-gray-50"
                       } ${
                         isActive ? "bg-emerald-50" : ""
@@ -590,7 +590,7 @@ export default function KitchenPage() {
                         isNew ? "bg-yellow-50 ring-1 ring-yellow-300" : ""
                       } ${
                         isSelected
-                          ? `bg-blue-50 ${STATUS_LEFT_BORDER[order.status] ?? "border-l-gray-300"}`
+                          ? `-translate-x-2 bg-blue-200 ring-2 ring-blue-400 shadow-md ${STATUS_LEFT_BORDER[order.status] ?? "border-l-gray-300"}`
                           : "border-l-transparent"
                       }`}
                     >
