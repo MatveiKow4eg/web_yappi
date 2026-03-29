@@ -305,7 +305,7 @@ export default function KitchenPage() {
               <p className="text-sm font-bold text-gray-900 uppercase tracking-widest">Управление сменой</p>
               <button
                 onClick={() => setShowShiftModal(false)}
-                className="text-gray-400 hover:text-gray-900 text-2xl leading-none"
+                className="text-gray-900 hover:text-gray-900 text-2xl leading-none"
               >
                 ×
               </button>
@@ -322,7 +322,7 @@ export default function KitchenPage() {
               {showOrderTimeEditor && (
                 <div className="card p-3 space-y-3">
                   <div>
-                    <p className="text-xs text-gray-500 mb-2">Самовывоз, мин</p>
+                    <p className="text-xs text-gray-900 mb-2">Самовывоз, мин</p>
                     <div className="flex items-center justify-between gap-2">
                       <button
                         onClick={() => setPickupMinutes(String(Math.max(1, parseInt(pickupMinutes, 10) - 5)))}
@@ -341,7 +341,7 @@ export default function KitchenPage() {
                   </div>
 
                   <div>
-                    <p className="text-xs text-gray-500 mb-2">Доставка, мин</p>
+                    <p className="text-xs text-gray-900 mb-2">Доставка, мин</p>
                     <div className="flex items-center justify-between gap-2">
                       <button
                         onClick={() => setDeliveryMinutes(String(Math.max(1, parseInt(deliveryMinutes, 10) - 5)))}
@@ -392,7 +392,7 @@ export default function KitchenPage() {
 
             {shiftStats && showStats && (
               <div className="card p-3 mt-4">
-                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">
+                <p className="text-xs text-gray-900 mb-2 uppercase tracking-wider">
                   Статистика смены
                   {shiftStats.shift_started_at
                     ? ` (${new Date(shiftStats.shift_started_at).toLocaleDateString("ru-RU")})`
@@ -400,15 +400,15 @@ export default function KitchenPage() {
                 </p>
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <p className="text-gray-500 text-xs">Заказы</p>
+                    <p className="text-gray-900 text-xs">Заказы</p>
                     <p className="text-gray-900 font-black text-xl">{shiftStats.orders_count}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs">Роллы, шт</p>
+                    <p className="text-gray-900 text-xs">Роллы, шт</p>
                     <p className="text-gray-900 font-black text-xl">{shiftStats.rolls_count}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs">Тотал чек</p>
+                    <p className="text-gray-900 text-xs">Тотал чек</p>
                     <p className="text-brand-red font-black text-xl">{Number(shiftStats.total_revenue).toFixed(2)} €</p>
                   </div>
                 </div>
@@ -417,13 +417,13 @@ export default function KitchenPage() {
 
             {historyByDay.length > 0 && showHistory && (
               <div className="card p-3 mt-4 max-h-48 overflow-y-auto">
-                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">История по дням</p>
+                <p className="text-xs text-gray-900 mb-2 uppercase tracking-wider">История по дням</p>
                 <div className="space-y-2">
                   {historyByDay.map((row) => (
                     <div key={row.dayKey} className="flex items-center justify-between text-sm">
                       <span className="text-gray-900">{row.dayLabel}</span>
-                      <span className="text-gray-500">{row.orders} зак.</span>
-                      <span className="text-gray-500">{row.rolls} шт</span>
+                      <span className="text-gray-900">{row.orders} зак.</span>
+                      <span className="text-gray-900">{row.rolls} шт</span>
                       <span className="text-brand-red font-semibold">{row.total.toFixed(2)} €</span>
                     </div>
                   ))}
@@ -439,7 +439,7 @@ export default function KitchenPage() {
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
           <div className="text-6xl mb-6">🌙</div>
           <p className="text-gray-900 font-bold text-2xl mb-2">Смена закрыта</p>
-          <p className="text-gray-500 mb-8">Нажмите «Открыть смену», чтобы начать новый день</p>
+          <p className="text-gray-900 mb-8">Нажмите «Открыть смену», чтобы начать новый день</p>
 
           <button onClick={openDay} disabled={openingDay} className="btn-primary py-3 px-10 text-base mb-6">
             {openingDay ? "Открываем смену..." : "Открыть смену"}
@@ -456,7 +456,7 @@ export default function KitchenPage() {
 
           {shiftStats && showStats && (
             <div className="card p-4 max-w-sm w-full">
-              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">
+              <p className="text-xs text-gray-900 mb-2 uppercase tracking-wider">
                 Статистика смены
                 {shiftStats.shift_started_at
                   ? ` (${new Date(shiftStats.shift_started_at).toLocaleDateString("ru-RU")})`
@@ -464,15 +464,15 @@ export default function KitchenPage() {
               </p>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-gray-500 text-xs">Заказы</p>
+                  <p className="text-gray-900 text-xs">Заказы</p>
                   <p className="text-gray-900 font-black text-xl">{shiftStats.orders_count}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Роллы, шт</p>
+                  <p className="text-gray-900 text-xs">Роллы, шт</p>
                   <p className="text-gray-900 font-black text-xl">{shiftStats.rolls_count}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Тотал чек</p>
+                  <p className="text-gray-900 text-xs">Тотал чек</p>
                   <p className="text-brand-red font-black text-xl">{Number(shiftStats.total_revenue).toFixed(2)} €</p>
                 </div>
               </div>
@@ -481,13 +481,13 @@ export default function KitchenPage() {
 
           {historyByDay.length > 0 && showHistory && (
             <div className="card p-3 mt-4 max-w-md w-full max-h-48 overflow-y-auto">
-              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">История по дням</p>
+              <p className="text-xs text-gray-900 mb-2 uppercase tracking-wider">История по дням</p>
               <div className="space-y-2">
                 {historyByDay.map((row) => (
                   <div key={row.dayKey} className="flex items-center justify-between text-sm">
                     <span className="text-gray-900">{row.dayLabel}</span>
-                    <span className="text-gray-500">{row.orders} зак.</span>
-                    <span className="text-gray-500">{row.rolls} шт</span>
+                    <span className="text-gray-900">{row.orders} зак.</span>
+                    <span className="text-gray-900">{row.rolls} шт</span>
                     <span className="text-brand-red font-semibold">{row.total.toFixed(2)} €</span>
                   </div>
                 ))}
@@ -503,7 +503,7 @@ export default function KitchenPage() {
             <div className="mb-3">
               <button
                 onClick={() => setShowOrderDescription((prev) => !prev)}
-                className="text-xs text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-full transition-colors"
+                className="text-xs text-gray-900 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-full transition-colors"
                 title={showOrderDescription ? "Скрыть описание заказа" : "Показать описание заказа"}
               >
                 {showOrderDescription ? "Скрыть" : "Показать"}
@@ -514,18 +514,18 @@ export default function KitchenPage() {
               <>
                 {loadingSession ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500">Загрузка смены...</p>
+                    <p className="text-gray-900">Загрузка смены...</p>
                   </div>
                 ) : activeCount === 0 && allOrders.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <div className="text-5xl mb-4">✅</div>
                     <p className="text-gray-900 font-bold text-xl mb-1">Всё готово</p>
-                    <p className="text-gray-500">Активных заказов нет</p>
+                    <p className="text-gray-900">Активных заказов нет</p>
                   </div>
                 ) : selectedOrder ? (
                   <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} preparedItems={preparedByOrder[selectedOrder.id] ?? {}} onTogglePrepared={(itemId) => togglePrepared(selectedOrder.id, itemId)} />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="flex items-center justify-center h-full text-gray-900">
                     Выберите заказ из списка
                   </div>
                 )}
@@ -540,7 +540,7 @@ export default function KitchenPage() {
           {/* RIGHT — order list with gear icon */}
           <div className="w-full md:w-96 shrink-0 border-l border-gray-200 overflow-y-auto bg-white flex flex-col">
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between shrink-0">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <span className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
                 Заказы
                 <span className="w-2 h-2 rounded-full bg-green-400" />
               </span>
@@ -550,17 +550,17 @@ export default function KitchenPage() {
                     {activeCount} акт.
                   </span>
                 )}
-                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full">
                   {allOrders.length}
                 </span>
                 {lastRefreshed && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[10px] text-gray-900">
                     {lastRefreshed.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                   </span>
                 )}
                 <button
                   onClick={() => setShowShiftModal(true)}
-                  className="ml-1 text-gray-400 hover:text-gray-900 transition-colors text-base leading-none"
+                  className="ml-1 text-gray-900 hover:text-gray-900 transition-colors text-base leading-none"
                   title="Управление сменой"
                 >
                   ⚙️
@@ -569,7 +569,7 @@ export default function KitchenPage() {
             </div>
 
             {allOrders.length === 0 ? (
-              <p className="text-gray-400 text-xs text-center py-8">Нет заказов</p>
+              <p className="text-gray-900 text-xs text-center py-8">Нет заказов</p>
             ) : (
               <div className="flex flex-col flex-1">
                 {allOrders.map((order) => {
@@ -610,11 +610,11 @@ export default function KitchenPage() {
                               <span
                                 className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[order.status] ?? "bg-gray-400"} ${isNew ? "animate-pulse" : ""}`}
                               />
-                              <span className={`font-mono font-bold text-[13px] truncate ${isClosed ? "text-gray-400" : "text-gray-900"}`}>
+                              <span className={`font-mono font-bold text-[13px] truncate ${isClosed ? "text-gray-900" : "text-gray-900"}`}>
                                 #{order.order_number}
                               </span>
                             </div>
-                            <span className="text-right text-[10px] leading-tight text-gray-400 shrink-0">
+                            <span className="text-right text-[10px] leading-tight text-gray-900 shrink-0">
                               {createdAt.toLocaleDateString("ru-RU", {
                                 day: "2-digit",
                                 month: "2-digit",
@@ -627,15 +627,15 @@ export default function KitchenPage() {
                             </span>
                           </div>
 
-                          <p className={`mb-1 text-[15px] font-semibold truncate ${isClosed ? "text-gray-400" : "text-gray-900"}`}>
+                          <p className={`mb-1 text-[15px] font-semibold truncate ${isClosed ? "text-gray-900" : "text-gray-900"}`}>
                             {order.customer_name}
                           </p>
 
                           <div className="flex items-center justify-between gap-3 text-[12px]">
-                            <span className="text-gray-500">
+                            <span className="text-gray-900">
                               {order.items.length} поз.
                             </span>
-                            <span className={`font-bold ${isClosed ? "text-gray-400" : "text-gray-900"}`}>
+                            <span className={`font-bold ${isClosed ? "text-gray-900" : "text-gray-900"}`}>
                               {Number(order.total_amount).toFixed(2)} €
                             </span>
                           </div>
@@ -678,7 +678,7 @@ function OrderDetail({
           <p className="text-gray-900 font-black font-mono text-3xl mb-1">
             #{order.order_number}
           </p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-900 text-sm">
             {order.type === "delivery" ? "🚚 Доставка" : "🏪 Самовывоз"} ·{" "}
             {new Date(order.created_at).toLocaleTimeString("ru-RU", {
               hour: "2-digit",
@@ -704,13 +704,13 @@ function OrderDetail({
       {/* Customer + payment */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="card p-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3">
             Клиент
           </h3>
           <p className="text-gray-900 font-semibold">{order.customer_name}</p>
-          <p className="text-gray-500 text-sm">{order.customer_phone}</p>
+          <p className="text-gray-900 text-sm">{order.customer_phone}</p>
           {order.type === "delivery" && order.address_line && (
-            <p className="text-gray-500 text-sm mt-2">
+            <p className="text-gray-900 text-sm mt-2">
               📍 {order.address_line}
               {order.apartment ? `, кв. ${order.apartment}` : ""}
               {order.entrance ? `, подъезд ${order.entrance}` : ""}
@@ -721,17 +721,17 @@ function OrderDetail({
         </div>
 
         <div className="card p-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3">
             Оплата
           </h3>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Способ</span>
+            <span className="text-gray-900">Способ</span>
             <span className="text-gray-900">
               {PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm mt-1.5">
-            <span className="text-gray-500">Статус</span>
+            <span className="text-gray-900">Статус</span>
             <span
               className={
                 order.payment_status === "paid"
@@ -747,7 +747,7 @@ function OrderDetail({
             </span>
           </div>
           {order.estimated_ready_at && order.status === "confirmed_preparing" && (
-            <div className="mt-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-gray-500">
+            <div className="mt-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-gray-900">
               ⏱ Готов к:{" "}
               <span className="text-gray-900 font-semibold">
                 {new Date(order.estimated_ready_at).toLocaleTimeString("ru-RU", {
@@ -765,7 +765,7 @@ function OrderDetail({
 
       {/* Items */}
       <div className="card p-4 mb-4">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3">
           Состав заказа
         </h3>
         <div className="space-y-3">
@@ -789,7 +789,7 @@ function OrderDetail({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={imageSrc} alt={item.product_name_snapshot} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-900">
                       🍣
                     </div>
                   )}
@@ -800,10 +800,10 @@ function OrderDetail({
                     x{item.quantity} - {productCode ? `#${productCode} ` : ""}{item.product_name_snapshot} · {piecesCount ?? "?"}шт.
                   </p>
                 {item.variant_name_snapshot && (
-                  <p className="text-gray-400 text-xs">{item.variant_name_snapshot}</p>
+                  <p className="text-gray-900 text-xs">{item.variant_name_snapshot}</p>
                 )}
                 {item.selections?.map((s) => (
-                  <p key={s.id} className="text-gray-400 text-xs">
+                  <p key={s.id} className="text-gray-900 text-xs">
                     {s.option_group_name_snapshot}: {s.option_item_name_snapshot}
                   </p>
                 ))}
@@ -830,15 +830,15 @@ function OrderDetail({
 
         <div className="mt-4 pt-3 border-t border-gray-200 space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Подытог</span>
+            <span className="text-gray-900">Подытог</span>
             <span className="text-gray-900">{Number(order.subtotal_amount).toFixed(2)} €</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Доставка</span>
+            <span className="text-gray-900">Доставка</span>
             <span className="text-gray-900">{Number(order.delivery_fee).toFixed(2)} €</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Скидка</span>
+            <span className="text-gray-900">Скидка</span>
             <span className="text-green-600">−{Number(order.discount_amount).toFixed(2)} €</span>
           </div>
           <div className="flex justify-between font-bold pt-1 border-t border-gray-200">
@@ -851,16 +851,16 @@ function OrderDetail({
       {/* Comment */}
       {order.comment && (
         <div className="card p-4 mb-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-2">
             Комментарий
           </h3>
-          <p className="text-gray-600 text-sm">💬 {order.comment}</p>
+          <p className="text-gray-900 text-sm">💬 {order.comment}</p>
         </div>
       )}
 
       {/* Actions */}
       <div className="card p-4">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3">
           Действия
         </h3>
         <KitchenOrderActions

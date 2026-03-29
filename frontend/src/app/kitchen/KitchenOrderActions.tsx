@@ -77,7 +77,7 @@ export default function KitchenOrderActions({
                 min={1}
                 max={240}
               />
-              <span className="text-gray-500 text-xs shrink-0">мин</span>
+              <span className="text-gray-900 text-xs shrink-0">мин</span>
               <button
                 onClick={handleAccept}
                 disabled={loading}
