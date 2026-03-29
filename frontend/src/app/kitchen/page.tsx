@@ -484,43 +484,48 @@ export default function KitchenPage() {
         /* ── OPEN SHIFT: 2-column layout ──────────────────────────────── */
         <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
           {/* LEFT — detail panel */}
-          {showOrderDescription && (
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              {loadingSession ? (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-brand-text-muted">Загрузка смены...</p>
-                </div>
-              ) : activeCount === 0 && allOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="text-5xl mb-4">✅</div>
-                  <p className="text-white font-bold text-xl mb-1">Всё готово</p>
-                  <p className="text-brand-text-muted">Активных заказов нет</p>
-                </div>
-              ) : selectedOrder ? (
-                <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-brand-text-muted">
-                  Выберите заказ из списка
-                </div>
-              )}
+          <div className={`${showOrderDescription ? "flex-1" : "md:w-14 md:min-w-14"} overflow-y-auto p-4 md:p-6`}>
+            <div className="mb-3">
+              <button
+                onClick={() => setShowOrderDescription((prev) => !prev)}
+                className="text-xs text-brand-text-muted hover:text-white bg-white/10 hover:bg-white/15 px-2 py-1 rounded-full transition-colors"
+                title={showOrderDescription ? "Скрыть описание заказа" : "Показать описание заказа"}
+              >
+                {showOrderDescription ? "Скрыть" : "Показать"}
+              </button>
             </div>
-          )}
+
+            {showOrderDescription && (
+              <>
+                {loadingSession ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-brand-text-muted">Загрузка смены...</p>
+                  </div>
+                ) : activeCount === 0 && allOrders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="text-5xl mb-4">✅</div>
+                    <p className="text-white font-bold text-xl mb-1">Всё готово</p>
+                    <p className="text-brand-text-muted">Активных заказов нет</p>
+                  </div>
+                ) : selectedOrder ? (
+                  <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-brand-text-muted">
+                    Выберите заказ из списка
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {/* RIGHT — order list with gear icon */}
-          <div className={`w-full ${showOrderDescription ? "md:w-96" : "md:w-full"} shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col`}>
+          <div className="w-full md:w-96 shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col">
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
               <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest flex items-center gap-2">
                 Заказы
                 <span className="w-2 h-2 rounded-full bg-green-400" />
               </span>
               <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setShowOrderDescription((prev) => !prev)}
-                  className="text-xs text-brand-text-muted hover:text-white bg-white/10 hover:bg-white/15 px-2 py-0.5 rounded-full transition-colors"
-                  title={showOrderDescription ? "Скрыть описание заказа" : "Показать описание заказа"}
-                >
-                  {showOrderDescription ? "Скрыть" : "Показать"}
-                </button>
                 {activeCount > 0 && (
                   <span className="text-xs text-yellow-400 font-bold bg-yellow-400/10 px-2 py-0.5 rounded-full">
                     {activeCount} акт.
@@ -761,7 +766,7 @@ function OrderDetail({
               }`}
             >
               <div className="flex items-start gap-3 min-w-0 flex-1">
-                <div className="h-8 w-8 rounded-full overflow-hidden bg-brand-gray-mid border border-white/10 shrink-0 mt-0.5">
+                <div className="h-11 w-11 rounded-full overflow-hidden bg-brand-gray-mid border border-white/10 shrink-0 mt-0.5">
                   {imageSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={imageSrc} alt={item.product_name_snapshot} className="w-full h-full object-cover" />
@@ -810,18 +815,14 @@ function OrderDetail({
             <span className="text-brand-text-muted">Подытог</span>
             <span className="text-white">{Number(order.subtotal_amount).toFixed(2)} €</span>
           </div>
-          {Number(order.delivery_fee) > 0 && (
-            <div className="flex justify-between">
-              <span className="text-brand-text-muted">Доставка</span>
-              <span className="text-white">{Number(order.delivery_fee).toFixed(2)} €</span>
-            </div>
-          )}
-          {Number(order.discount_amount) > 0 && (
-            <div className="flex justify-between">
-              <span className="text-brand-text-muted">Скидка</span>
-              <span className="text-green-400">−{Number(order.discount_amount).toFixed(2)} €</span>
-            </div>
-          )}
+          <div className="flex justify-between">
+            <span className="text-brand-text-muted">Доставка</span>
+            <span className="text-white">{Number(order.delivery_fee).toFixed(2)} €</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-brand-text-muted">Скидка</span>
+            <span className="text-green-400">−{Number(order.discount_amount).toFixed(2)} €</span>
+          </div>
           <div className="flex justify-between font-bold pt-1 border-t border-white/5">
             <span className="text-white text-base">Итого</span>
             <span className="text-brand-red text-lg">{Number(order.total_amount).toFixed(2)} €</span>
