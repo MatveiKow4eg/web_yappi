@@ -576,6 +576,7 @@ export default function KitchenPage() {
                   const isClosed = CLOSED_STATUSES.has(order.status);
                   const isActive = !isClosed;
                   const isNew = order.status === "new";
+                    const isSelected = selectedId === order.id;
                   const createdAt = new Date(order.created_at);
                   return (
                     <button
@@ -588,7 +589,7 @@ export default function KitchenPage() {
                       } ${
                         isNew ? "bg-yellow-50 ring-1 ring-yellow-300" : ""
                       } ${
-                        selectedId === order.id
+                        isSelected
                           ? `bg-blue-50 ${STATUS_LEFT_BORDER[order.status] ?? "border-l-gray-300"}`
                           : "border-l-transparent"
                       }`}
@@ -613,6 +614,11 @@ export default function KitchenPage() {
                               <span className={`font-mono font-bold text-[13px] truncate ${isClosed ? "text-gray-900" : "text-gray-900"}`}>
                                 #{order.order_number}
                               </span>
+                              {isSelected && (
+                                <span className="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                  ✓ Выбран
+                                </span>
+                              )}
                             </div>
                             <span className="text-right text-[10px] leading-tight text-gray-900 shrink-0">
                               {createdAt.toLocaleDateString("ru-RU", {
