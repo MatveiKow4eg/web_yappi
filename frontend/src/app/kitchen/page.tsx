@@ -104,6 +104,14 @@ export default function KitchenPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [showOrderDescription, setShowOrderDescription] = useState(true);
+  const [preparedByOrder, setPreparedByOrder] = useState<Record<string, Record<string, boolean>>>({});
+
+  function togglePrepared(orderId: string, itemId: string) {
+    setPreparedByOrder((prev) => ({
+      ...prev,
+      [orderId]: { ...prev[orderId], [itemId]: !prev[orderId]?.[itemId] },
+    }));
+  }
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -515,7 +523,7 @@ export default function KitchenPage() {
                     <p className="text-brand-text-muted">Активных заказов нет</p>
                   </div>
                 ) : selectedOrder ? (
-                  <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} />
+                  <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} preparedItems={preparedByOrder[selectedOrder.id] ?? {}} onTogglePrepared={(itemId) => togglePrepared(selectedOrder.id, itemId)} />
                 ) : (
                   <div className="flex items-center justify-center h-full text-brand-text-muted">
                     Выберите заказ из списка
@@ -649,23 +657,18 @@ function OrderDetail({
   order,
   session,
   onUpdate,
+  preparedItems,
+  onTogglePrepared,
 }: {
   order: Order;
   session: KitchenState | null;
   onUpdate: () => void;
+  preparedItems: Record<string, boolean>;
+  onTogglePrepared: (itemId: string) => void;
 }) {
-  const [preparedByItem, setPreparedByItem] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setPreparedByItem({});
-  }, [order.id]);
-
+  const preparedByItem = preparedItems;
   const preparedCount = order.items.reduce((acc, item) => acc + (preparedByItem[item.id] ? 1 : 0), 0);
   const remainingCount = Math.max(0, order.items.length - preparedCount);
-
-  function togglePrepared(itemId: string) {
-    setPreparedByItem((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
-  }
 
   return (
     <div className="max-w-2xl">
@@ -775,7 +778,7 @@ function OrderDetail({
             <button
               key={item.id}
               type="button"
-              onClick={() => togglePrepared(item.id)}
+              onClick={() => onTogglePrepared(item.id)}
               className={`w-full text-left flex items-start justify-between gap-3 rounded-lg p-2 transition-colors ${
                 isPrepared ? "bg-green-500/10" : "hover:bg-white/5"
               }`}
