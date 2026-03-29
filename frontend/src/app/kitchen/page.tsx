@@ -542,7 +542,7 @@ export default function KitchenPage() {
       ) : (
         <>
           <div className="px-4 md:px-6 pt-3 pb-2 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="inline-flex min-w-max items-center overflow-hidden border border-gray-200 bg-white whitespace-nowrap">
               <button
                 onClick={() => {
