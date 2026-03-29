@@ -104,7 +104,6 @@ export default function KitchenPage() {
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showShiftModal, setShowShiftModal] = useState(false);
-  const [showOrderDescription, setShowOrderDescription] = useState(true);
   const [preparedByOrder, setPreparedByOrder] = useState<Record<string, Record<string, boolean>>>({});
 
   function togglePrepared(orderId: string, itemId: string) {
@@ -513,40 +512,22 @@ export default function KitchenPage() {
         <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row flex-col">
           {/* LEFT — detail panel */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="mb-3">
-              <button
-                onClick={() => setShowOrderDescription((prev) => !prev)}
-                className="text-xs text-gray-900 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-full transition-colors"
-                title={showOrderDescription ? "Скрыть описание заказа" : "Показать описание заказа"}
-              >
-                {showOrderDescription ? "Скрыть" : "Показать"}
-              </button>
-            </div>
-
-            {showOrderDescription && (
-              <>
-                {loadingSession ? (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-900">Загрузка смены...</p>
-                  </div>
-                ) : activeCount === 0 && allOrders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="text-5xl mb-4">✅</div>
-                    <p className="text-gray-900 font-bold text-xl mb-1">Всё готово</p>
-                    <p className="text-gray-900">Активных заказов нет</p>
-                  </div>
-                ) : selectedOrder ? (
-                  <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} preparedItems={preparedByOrder[selectedOrder.id] ?? {}} onTogglePrepared={(itemId) => togglePrepared(selectedOrder.id, itemId)} />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-900">
-                    Выберите заказ из списка
-                  </div>
-                )}
-              </>
-            )}
-
-            {!showOrderDescription && (
-              <div className="h-full" />
+            {loadingSession ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-900">Загрузка смены...</p>
+              </div>
+            ) : activeCount === 0 && allOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="text-5xl mb-4">✅</div>
+                <p className="text-gray-900 font-bold text-xl mb-1">Всё готово</p>
+                <p className="text-gray-900">Активных заказов нет</p>
+              </div>
+            ) : selectedOrder ? (
+              <OrderDetail order={selectedOrder} session={session} onUpdate={fetchOrders} preparedItems={preparedByOrder[selectedOrder.id] ?? {}} onTogglePrepared={(itemId) => togglePrepared(selectedOrder.id, itemId)} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-900">
+                Выберите заказ из списка
+              </div>
             )}
           </div>
 
@@ -694,16 +675,18 @@ function OrderDetail({
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-gray-900 font-black font-mono text-3xl mb-1">
-            #{order.order_number}
-          </p>
-          <p className="text-gray-900 text-sm">
-            {order.type === "delivery" ? "🚚 Доставка" : "🏪 Самовывоз"} ·{" "}
+          <p className="text-gray-900 font-black text-3xl leading-tight mb-1">
+            {new Date(order.created_at).toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })}{" "}
             {new Date(order.created_at).toLocaleTimeString("ru-RU", {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </p>
+          <p className="text-gray-500 text-xs mt-1">№ {order.order_number}</p>
         </div>
         <span
           className={`text-sm font-bold px-3 py-1.5 rounded-xl shrink-0 ${
@@ -766,7 +749,7 @@ function OrderDetail({
               }
             >
               {order.payment_status === "paid"
-                ? "✅ Оплачено"
+                ? "✅"
                 : order.payment_status === "pending"
                   ? "⏳ Ожидание"
                   : order.payment_status}
