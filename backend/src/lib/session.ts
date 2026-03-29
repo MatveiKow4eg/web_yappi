@@ -3,6 +3,97 @@ import { verifyAdminToken, AdminTokenPayload } from "./auth";
 
 type AdminRole = AdminTokenPayload["role"];
 
+type ValidationIssue = {
+  code?: string;
+  minimum?: number;
+  maximum?: number;
+  type?: string;
+  expected?: string;
+  received?: string;
+  options?: string[];
+  path?: Array<string | number>;
+  message?: string;
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  customer_name: "Имя",
+  customer_phone: "Телефон",
+  address_line: "Адрес доставки",
+  apartment: "Квартира",
+  entrance: "Подъезд",
+  floor: "Этаж",
+  door_code: "Домофон",
+  comment: "Комментарий",
+  promo_code: "Промокод",
+  type: "Тип заказа",
+  payment_method: "Способ оплаты",
+  items: "Товары",
+  quantity: "Количество",
+  product_id: "Товар",
+  product_variant_id: "Вариант",
+  option_item_id: "Опция",
+  email: "Email",
+  password: "Пароль",
+  status: "Статус",
+};
+
+function formatValidationIssue(issue: ValidationIssue): string {
+  const rawField = issue.path?.length ? String(issue.path[issue.path.length - 1]) : "field";
+  const field = FIELD_LABELS[rawField] ?? rawField;
+
+  if (issue.code === "too_small") {
+    if (issue.type === "string" && issue.minimum) {
+      return `${field}: минимум ${issue.minimum} символов`;
+    }
+    if (issue.type === "array" && issue.minimum) {
+      return `${field}: выберите минимум ${issue.minimum}`;
+    }
+    if (typeof issue.minimum === "number") {
+      return `${field}: значение должно быть не меньше ${issue.minimum}`;
+    }
+  }
+
+  if (issue.code === "too_big" && typeof issue.maximum === "number") {
+    return `${field}: значение должно быть не больше ${issue.maximum}`;
+  }
+
+  if (issue.code === "invalid_type") {
+    return `${field}: заполнено некорректно`;
+  }
+
+  if (issue.code === "invalid_enum_value") {
+    return `${field}: выбрано недопустимое значение`;
+  }
+
+  if (issue.code === "invalid_string") {
+    return `${field}: неверный формат`;
+  }
+
+  if (issue.message && !issue.message.startsWith("String must contain at least")) {
+    return `${field}: ${issue.message}`;
+  }
+
+  return `${field}: заполнено некорректно`;
+}
+
+function normalizeErrorMessage(message: string): string {
+  const trimmed = message.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+    return message;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as ValidationIssue[];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return message;
+    }
+
+    return parsed.map(formatValidationIssue).join(". ");
+  } catch {
+    return message;
+  }
+}
+
 export async function getAdminSession(
   req: FastifyRequest
 ): Promise<AdminTokenPayload | null> {
@@ -39,5 +130,5 @@ export function ok(reply: FastifyReply, data: unknown, status = 200) {
 }
 
 export function err(reply: FastifyReply, message: string, status = 400) {
-  return reply.code(status).send({ ok: false, error: message });
+  return reply.code(status).send({ ok: false, error: normalizeErrorMessage(message) });
 }

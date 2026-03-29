@@ -88,6 +88,9 @@ export interface Order {
     id: string;
     product_name_snapshot: string;
     variant_name_snapshot?: string;
+    product?: {
+      image_url?: string | null;
+    };
     quantity: number;
     line_total: number;
     selections?: Array<{

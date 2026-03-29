@@ -119,7 +119,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
           skip,
           ...(parsedLimit > 0 ? { take: parsedLimit } : {}),
           include: {
-            items: { include: { selections: true } },
+            items: { include: { selections: true, product: { select: { image_url: true } } } },
             promo_code: { select: { code: true } },
             delivery_zone: true,
           },
@@ -140,7 +140,7 @@ export default async function adminOrdersRoutes(app: FastifyInstance) {
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },
       include: {
-        items: { include: { selections: true } },
+        items: { include: { selections: true, product: { select: { image_url: true } } } },
         promo_code: { select: { code: true } },
         delivery_zone: true,
       },

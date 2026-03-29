@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { AppApi, type Order, type KitchenShiftStats, type KitchenState } from "@/lib/api-client";
+import { resolveProductImageSrc } from "@/lib/utils";
 import KitchenOrderActions from "./KitchenOrderActions";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -50,7 +51,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 function OrderTypeIcon({ type }: { type: Order["type"] }) {
   if (type === "delivery") {
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M3 7h11v8H3z" />
         <path d="M14 10h3l3 3v2h-6z" />
         <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor" stroke="none" />
@@ -60,12 +61,19 @@ function OrderTypeIcon({ type }: { type: Order["type"] }) {
   }
 
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 10.5 12 4l8 6.5" />
-      <path d="M6.5 9.5V20h11V9.5" />
-      <path d="M10 20v-5h4v5" />
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3 4 7l8 4 8-4-8-4z" />
+      <path d="M4 7v10l8 4 8-4V7" />
+      <path d="M12 11v10" />
     </svg>
   );
+}
+
+function extractProductCode(imageRef?: string | null): string | null {
+  const value = (imageRef ?? "").replace(/^#\s*/, "").trim();
+  if (!value) return null;
+  const match = value.match(/\d+/);
+  return match ? match[0] : null;
 }
 
 export default function KitchenPage() {
@@ -496,7 +504,7 @@ export default function KitchenPage() {
           </div>
 
           {/* RIGHT — order list with gear icon */}
-          <div className="w-full md:w-80 shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col">
+          <div className="w-full md:w-96 shrink-0 border-l border-white/5 overflow-y-auto bg-brand-gray-dark/30 flex flex-col">
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
               <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest flex items-center gap-2">
                 Заказы
@@ -550,10 +558,10 @@ export default function KitchenPage() {
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
                             order.type === "delivery"
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "bg-white/10 text-brand-text-muted"
+                              ? "bg-blue-500/25 text-blue-300"
+                              : "bg-green-500/20 text-green-300"
                           }`}
                         >
                           <OrderTypeIcon type={order.type} />
@@ -617,6 +625,19 @@ function OrderDetail({
   session: KitchenState | null;
   onUpdate: () => void;
 }) {
+  const [preparedByItem, setPreparedByItem] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setPreparedByItem({});
+  }, [order.id]);
+
+  const preparedCount = order.items.reduce((acc, item) => acc + (preparedByItem[item.id] ? 1 : 0), 0);
+  const remainingCount = Math.max(0, order.items.length - preparedCount);
+
+  function togglePrepared(itemId: string) {
+    setPreparedByItem((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+  }
+
   return (
     <div className="max-w-2xl">
       {/* Header */}
@@ -648,37 +669,113 @@ function OrderDetail({
         </span>
       </div>
 
-      {/* Customer */}
-      <div className="card p-4 mb-4">
-        <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest mb-3">
-          Клиент
-        </h3>
-        <p className="text-white font-semibold">{order.customer_name}</p>
-        <p className="text-brand-text-muted text-sm">{order.customer_phone}</p>
-        {order.type === "delivery" && order.address_line && (
-          <p className="text-brand-text-muted text-sm mt-2">
-            📍 {order.address_line}
-            {order.apartment ? `, кв. ${order.apartment}` : ""}
-            {order.entrance ? `, подъезд ${order.entrance}` : ""}
-            {order.floor ? `, этаж ${order.floor}` : ""}
-            {order.door_code ? `, код ${order.door_code}` : ""}
-          </p>
-        )}
+      {/* Customer + payment */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="card p-4">
+          <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest mb-3">
+            Клиент
+          </h3>
+          <p className="text-white font-semibold">{order.customer_name}</p>
+          <p className="text-brand-text-muted text-sm">{order.customer_phone}</p>
+          {order.type === "delivery" && order.address_line && (
+            <p className="text-brand-text-muted text-sm mt-2">
+              📍 {order.address_line}
+              {order.apartment ? `, кв. ${order.apartment}` : ""}
+              {order.entrance ? `, подъезд ${order.entrance}` : ""}
+              {order.floor ? `, этаж ${order.floor}` : ""}
+              {order.door_code ? `, код ${order.door_code}` : ""}
+            </p>
+          )}
+        </div>
+
+        <div className="card p-4">
+          <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest mb-3">
+            Оплата
+          </h3>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-brand-text-muted">Способ</span>
+            <span className="text-white">
+              {PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm mt-1.5">
+            <span className="text-brand-text-muted">Статус</span>
+            <span
+              className={
+                order.payment_status === "paid"
+                  ? "text-green-400 font-semibold"
+                  : "text-amber-400"
+              }
+            >
+              {order.payment_status === "paid"
+                ? "✅ Оплачено"
+                : order.payment_status === "pending"
+                  ? "⏳ Ожидание"
+                  : order.payment_status}
+            </span>
+          </div>
+          {order.estimated_ready_at && order.status === "confirmed_preparing" && (
+            <div className="mt-3 px-3 py-2 rounded-lg bg-brand-red/10 border border-brand-red/20 text-xs text-brand-text-muted">
+              ⏱ Готов к:{" "}
+              <span className="text-white font-semibold">
+                {new Date(order.estimated_ready_at).toLocaleTimeString("ru-RU", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+              {order.estimated_prep_minutes && (
+                <span className="ml-1">({order.estimated_prep_minutes} мин)</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Items */}
       <div className="card p-4 mb-4">
-        <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest mb-3">
-          Состав заказа
-        </h3>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
+            Состав заказа
+          </h3>
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">
+              Готово: {preparedCount}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-300">
+              Осталось: {remainingCount}
+            </span>
+          </div>
+        </div>
         <div className="space-y-3">
-          {order.items.map((item) => (
-            <div key={item.id} className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <p className="text-white font-semibold">
-                  <span className="text-brand-red mr-1.5">×{item.quantity}</span>
-                  {item.product_name_snapshot}
-                </p>
+          {order.items.map((item) => {
+            const imageSrc = resolveProductImageSrc(item.product?.image_url);
+            const productCode = extractProductCode(item.product?.image_url);
+            const isPrepared = Boolean(preparedByItem[item.id]);
+            return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => togglePrepared(item.id)}
+              className={`w-full text-left flex items-start justify-between gap-3 rounded-lg p-2 transition-colors ${
+                isPrepared ? "bg-green-500/10" : "hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="h-8 w-8 rounded-full overflow-hidden bg-brand-gray-mid border border-white/10 shrink-0 mt-0.5">
+                  {imageSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageSrc} alt={item.product_name_snapshot} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-brand-text-muted">
+                      🍣
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className={`font-semibold truncate ${isPrepared ? "text-green-200" : "text-white"}`}>
+                    x{item.quantity} - {productCode ? `#${productCode} ` : ""}{item.product_name_snapshot}
+                  </p>
                 {item.variant_name_snapshot && (
                   <p className="text-brand-text-muted text-xs">{item.variant_name_snapshot}</p>
                 )}
@@ -687,12 +784,25 @@ function OrderDetail({
                     {s.option_group_name_snapshot}: {s.option_item_name_snapshot}
                   </p>
                 ))}
+                </div>
               </div>
-              <p className="text-white text-sm font-bold shrink-0">
-                {Number(item.line_total).toFixed(2)} €
-              </p>
-            </div>
-          ))}
+              <div className="flex items-center gap-3 shrink-0">
+                <p className="text-white text-sm font-bold">
+                  {Number(item.line_total).toFixed(2)} €
+                </p>
+                <span
+                  className={`h-5 w-5 rounded-md border flex items-center justify-center text-xs font-black transition-colors ${
+                    isPrepared
+                      ? "bg-green-500 border-green-400 text-white"
+                      : "border-white/25 text-transparent"
+                  }`}
+                >
+                  ✓
+                </span>
+              </div>
+            </button>
+            );
+          })}
         </div>
 
         <div className="mt-4 pt-3 border-t border-white/5 space-y-1 text-sm">
@@ -717,49 +827,6 @@ function OrderDetail({
             <span className="text-brand-red text-lg">{Number(order.total_amount).toFixed(2)} €</span>
           </div>
         </div>
-      </div>
-
-      {/* Payment */}
-      <div className="card p-4 mb-4">
-        <h3 className="text-xs font-bold text-brand-text-muted uppercase tracking-widest mb-3">
-          Оплата
-        </h3>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-brand-text-muted">Способ</span>
-          <span className="text-white">
-            {PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-sm mt-1.5">
-          <span className="text-brand-text-muted">Статус</span>
-          <span
-            className={
-              order.payment_status === "paid"
-                ? "text-green-400 font-semibold"
-                : "text-amber-400"
-            }
-          >
-            {order.payment_status === "paid"
-              ? "✅ Оплачено"
-              : order.payment_status === "pending"
-                ? "⏳ Ожидание"
-                : order.payment_status}
-          </span>
-        </div>
-        {order.estimated_ready_at && order.status === "confirmed_preparing" && (
-          <div className="mt-3 px-3 py-2 rounded-lg bg-brand-red/10 border border-brand-red/20 text-xs text-brand-text-muted">
-            ⏱ Готов к:{" "}
-            <span className="text-white font-semibold">
-              {new Date(order.estimated_ready_at).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-            {order.estimated_prep_minutes && (
-              <span className="ml-1">({order.estimated_prep_minutes} мин)</span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Comment */}
