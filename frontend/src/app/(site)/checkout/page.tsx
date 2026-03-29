@@ -6,12 +6,7 @@ import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
 
 type OrderType = "delivery" | "pickup";
-type PaymentMethod =
-  | "stripe"
-  | "cash_on_pickup"
-  | "card_on_pickup"
-  | "cash_on_delivery"
-  | "card_on_delivery";
+type PaymentMethod = "stripe";
 
 const CHECKOUT_DRAFT_KEY = "yappi_checkout_draft";
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -22,7 +17,7 @@ export default function CheckoutPage() {
   const stripeAvailable = Boolean(STRIPE_PUBLISHABLE_KEY);
 
   const [type, setType] = useState<OrderType>("delivery");
-  const [payment, setPayment] = useState<PaymentMethod>("cash_on_delivery");
+  const [payment, setPayment] = useState<PaymentMethod>("stripe");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -80,7 +75,7 @@ export default function CheckoutPage() {
       };
 
       if (draft.type) setType(draft.type);
-      if (draft.payment) setPayment(draft.payment);
+      if (draft.payment === "stripe") setPayment("stripe");
       if (draft.name) setName(draft.name);
       if (draft.phone) setPhone(draft.phone);
       if (draft.address) setAddress(draft.address);
@@ -139,7 +134,7 @@ export default function CheckoutPage() {
       const syncCancellation = async () => {
         if (!trackingToken) {
           setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
-          if (stripeAvailable) setPayment("stripe");
+          setPayment("stripe");
           return;
         }
 
@@ -154,7 +149,7 @@ export default function CheckoutPage() {
         }
 
         setStripeNotice("Онлайн-оплата была отменена. Корзина сохранена, вы можете изменить заказ и попробовать снова.");
-        if (stripeAvailable) setPayment("stripe");
+        setPayment("stripe");
       };
 
       void syncCancellation();
@@ -162,12 +157,6 @@ export default function CheckoutPage() {
       setStripeNotice(null);
     }
   }, [stripeAvailable]);
-
-  useEffect(() => {
-    if (!stripeAvailable && payment === "stripe") {
-      setPayment(type === "delivery" ? "cash_on_delivery" : "cash_on_pickup");
-    }
-  }, [payment, stripeAvailable, type]);
 
   const requestQuote = useCallback(async (showErrors: boolean, promoCodeOverride?: string | null) => {
     if (type === "delivery" && !address.trim()) {
@@ -334,10 +323,6 @@ export default function CheckoutPage() {
           }
 
           setError("Интернет-платеж сейчас недоступен. Заказ не был отправлен в платежный сервис.");
-        } else {
-          clearCart();
-          sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
-          router.push(`/track/${data.data.tracking_token}`);
         }
       }
     } catch {
@@ -346,23 +331,6 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   }
-
-  const paymentOptions =
-    type === "delivery"
-      ? [
-          { value: "cash_on_delivery", label: "💵 Наличными курьеру" },
-          { value: "card_on_delivery", label: "💳 Картой курьеру" },
-          { value: "stripe", label: "🌐 Интернет-платеж" },
-        ]
-      : [
-          { value: "cash_on_pickup", label: "💵 Наличными при получении" },
-          { value: "card_on_pickup", label: "💳 Картой при получении" },
-          { value: "stripe", label: "🌐 Интернет-платеж" },
-        ];
-
-  const visiblePaymentOptions = paymentOptions.filter(
-    (option) => option.value !== "stripe" || stripeAvailable
-  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
@@ -388,9 +356,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => {
                       setType(t);
-                      setPayment(
-                        t === "delivery" ? "cash_on_delivery" : "cash_on_pickup"
-                      );
+                      setPayment("stripe");
                     }}
                     className={`py-3 px-4 rounded-xl border text-sm font-semibold transition-all ${
                       type === t
@@ -484,36 +450,16 @@ export default function CheckoutPage() {
             {/* Payment */}
             <div className="card p-6">
               <h2 className="font-bold text-white mb-4">Способ оплаты</h2>
-              <div className="space-y-2">
-                {visiblePaymentOptions.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                      payment === opt.value
-                        ? "border-brand-red bg-brand-red/10"
-                        : "border-white/10 hover:border-white/20"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={opt.value}
-                      checked={payment === opt.value}
-                      onChange={() => setPayment(opt.value as PaymentMethod)}
-                      className="sr-only"
-                    />
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        payment === opt.value ? "border-brand-red" : "border-white/30"
-                      }`}
-                    >
-                      {payment === opt.value && (
-                        <div className="w-2 h-2 rounded-full bg-brand-red" />
-                      )}
-                    </div>
-                    <span className="text-sm text-white">{opt.label}</span>
-                  </label>
-                ))}
+              <div className="rounded-xl border border-brand-red/20 bg-brand-red/10 p-4">
+                <p className="text-sm font-semibold text-white">🌐 Только онлайн-оплата</p>
+                <p className="mt-1 text-sm text-brand-text-muted">
+                  Все заказы на сайте оплачиваются через платежную страницу Stripe.
+                </p>
+                {!stripeAvailable && (
+                  <p className="mt-3 text-sm text-brand-red">
+                    Онлайн-оплата временно недоступна. Оформление заказа отключено, пока не настроен Stripe.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -605,10 +551,10 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={loading || quoteLoading || !serverQuote}
+                disabled={loading || quoteLoading || !serverQuote || !stripeAvailable}
                 className="btn-primary w-full mt-4 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Оформляем..." : quoteLoading ? "Пересчет..." : "Оформить заказ"}
+                {loading ? "Оформляем..." : quoteLoading ? "Пересчет..." : !stripeAvailable ? "Онлайн-оплата недоступна" : "Оформить заказ"}
               </button>
             </div>
           </div>

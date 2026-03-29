@@ -17,8 +17,6 @@ const fallbackSettings = {
   pickup_enabled: true,
   delivery_enabled: true,
   stripe_enabled: false,
-  cash_on_pickup_enabled: true,
-  card_on_pickup_enabled: true,
   min_delivery_time_minutes: 30,
   max_delivery_time_minutes: 60,
 };
@@ -36,8 +34,6 @@ export default function AdminSettingsForm({ settings }: Props) {
     pickup_enabled: safeSettings.pickup_enabled,
     delivery_enabled: safeSettings.delivery_enabled,
     stripe_enabled: safeSettings.stripe_enabled,
-    cash_on_pickup_enabled: safeSettings.cash_on_pickup_enabled,
-    card_on_pickup_enabled: safeSettings.card_on_pickup_enabled,
     min_delivery_time_minutes: safeSettings.min_delivery_time_minutes,
     max_delivery_time_minutes: safeSettings.max_delivery_time_minutes,
   });
@@ -77,8 +73,6 @@ export default function AdminSettingsForm({ settings }: Props) {
           pickup_enabled: serverSettings.pickup_enabled,
           delivery_enabled: serverSettings.delivery_enabled,
           stripe_enabled: serverSettings.stripe_enabled,
-          cash_on_pickup_enabled: serverSettings.cash_on_pickup_enabled,
-          card_on_pickup_enabled: serverSettings.card_on_pickup_enabled,
           min_delivery_time_minutes: serverSettings.min_delivery_time_minutes,
           max_delivery_time_minutes: serverSettings.max_delivery_time_minutes,
         });
@@ -191,8 +185,6 @@ export default function AdminSettingsForm({ settings }: Props) {
           <Toggle label="Доставка включена" name="delivery_enabled" />
           <Toggle label="Самовывоз включен" name="pickup_enabled" />
           <Toggle label="Интернет-платеж" name="stripe_enabled" />
-          <Toggle label="Оплата наличными при самовывозе" name="cash_on_pickup_enabled" />
-          <Toggle label="Оплата картой при самовывозе" name="card_on_pickup_enabled" />
         </div>
       </Section>
 
