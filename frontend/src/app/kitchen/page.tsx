@@ -542,16 +542,17 @@ export default function KitchenPage() {
       ) : (
         <>
           <div className="px-4 md:px-6 pt-3 pb-2 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-            <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+            <div className="overflow-x-auto">
+              <div className="inline-flex min-w-max items-center overflow-hidden border border-gray-200 bg-white whitespace-nowrap">
               <button
                 onClick={() => {
                   setSelectedHistoryDay(null);
                   setAllowAutoSelect(true);
                 }}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                className={`shrink-0 border-r border-gray-200 px-4 py-2 text-xs font-bold transition-colors ${
                   selectedHistoryDay === null
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                    : "bg-white text-gray-900 hover:bg-gray-100"
                 }`}
               >
                 Сегодня
@@ -564,15 +565,16 @@ export default function KitchenPage() {
                     setSelectedHistoryDay(tab.dayKey);
                     setAllowAutoSelect(true);
                   }}
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                  className={`shrink-0 border-r border-gray-200 px-4 py-2 text-xs font-bold transition-colors last:border-r-0 ${
                     selectedHistoryDay === tab.dayKey
                       ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                      : "bg-white text-gray-900 hover:bg-gray-100"
                   }`}
                 >
                   {tab.label}
                 </button>
               ))}
+              </div>
             </div>
           </div>
 
@@ -748,7 +750,6 @@ function OrderDetail({
             {new Date(order.created_at).toLocaleDateString("ru-RU", {
               day: "2-digit",
               month: "2-digit",
-              year: "numeric",
             })}{" "}
             {new Date(order.created_at).toLocaleTimeString("ru-RU", {
               hour: "2-digit",
